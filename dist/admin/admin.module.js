@@ -12,6 +12,7 @@ const mongoose_1 = require("@nestjs/mongoose");
 const admin_service_1 = require("./admin.service");
 const admin_controller_1 = require("./admin.controller");
 const user_schema_1 = require("../schemas/user.schema");
+const public_controller_1 = require("./public.controller");
 const appointment_schema_1 = require("../schemas/appointment.schema");
 const transaction_schema_1 = require("../schemas/transaction.schema");
 const availability_schema_1 = require("../schemas/availability.schema");
@@ -31,7 +32,7 @@ exports.AdminModule = AdminModule = __decorate([
             ]),
         ],
         providers: [admin_service_1.AdminService],
-        controllers: [admin_controller_1.AdminController],
+        controllers: [admin_controller_1.AdminController, public_controller_1.PublicController],
     })
 ], AdminModule);
 //# sourceMappingURL=admin.module.js.map

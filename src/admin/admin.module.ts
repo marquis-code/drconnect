@@ -3,6 +3,7 @@ import { MongooseModule } from "@nestjs/mongoose"
 import { AdminService } from "./admin.service"
 import { AdminController } from "./admin.controller"
 import { User, UserSchema } from "src/schemas/user.schema"
+import { PublicController } from './public.controller';
 import { Appointment, AppointmentSchema } from "src/schemas/appointment.schema"
 import { Transaction, TransactionSchema } from "src/schemas/transaction.schema"
 import { Availability, AvailabilitySchema } from "src/schemas/availability.schema"
@@ -19,6 +20,6 @@ import { Settings, SettingsSchema } from "src/schemas/settings.schema"
     ]),
   ],
   providers: [AdminService],
-  controllers: [AdminController],
+  controllers: [AdminController, PublicController],
 })
 export class AdminModule {}
