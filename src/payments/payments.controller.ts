@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, UseGuards, Query } from "@nestjs/common"
+import { Controller, Post, Get, Param, UseGuards, Query, Body } from "@nestjs/common"
 import { PaymentsService } from "./payments.service"
 import { InitiatePaymentDto } from "./dto/initiate-payment.dto"
 import { JwtAuthGuard } from "src/auth/guards/jwt.guard"
@@ -11,7 +11,7 @@ export class PaymentsController {
   constructor(private paymentsService: PaymentsService) {}
 
   @Post("initiate")
-  async initiatePayment(initiatePaymentDto: InitiatePaymentDto, @CurrentUser() user: any) {
+  async initiatePayment(@Body() initiatePaymentDto: InitiatePaymentDto, @CurrentUser() user: any) {
     return this.paymentsService.initiatePayment(user.userId, initiatePaymentDto)
   }
 
