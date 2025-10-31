@@ -41,6 +41,15 @@ export class AdminController {
     return this.adminService.getAvailability()
   }
 
+  @Get("availability/by-date")
+  async getAvailabilityByDate(
+    @Query('date') date?: string,
+    @Query('time') time?: string,
+    @Query('consultationType') consultationType?: string
+  ) {
+    return this.adminService.getAvailabilityByDate(date, time, consultationType);
+  }
+
   @Post('settings')
   async updateSettings(@Body() settingsData: any) {
     return this.adminService.updateSettings(settingsData);

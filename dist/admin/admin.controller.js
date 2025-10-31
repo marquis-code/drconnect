@@ -42,6 +42,9 @@ let AdminController = class AdminController {
     async getAvailability() {
         return this.adminService.getAvailability();
     }
+    async getAvailabilityByDate(date, time, consultationType) {
+        return this.adminService.getAvailabilityByDate(date, time, consultationType);
+    }
     async updateSettings(settingsData) {
         return this.adminService.updateSettings(settingsData);
     }
@@ -94,6 +97,15 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getAvailability", null);
+__decorate([
+    (0, common_1.Get)("availability/by-date"),
+    __param(0, (0, common_1.Query)('date')),
+    __param(1, (0, common_1.Query)('time')),
+    __param(2, (0, common_1.Query)('consultationType')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "getAvailabilityByDate", null);
 __decorate([
     (0, common_1.Post)('settings'),
     __param(0, (0, common_1.Body)()),

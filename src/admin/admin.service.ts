@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common"
+import { Injectable, BadRequestException } from "@nestjs/common"
 import { InjectModel } from "@nestjs/mongoose"
 import { Model } from "mongoose"
 import { User } from "src/schemas/user.schema"
@@ -79,6 +79,130 @@ export class AdminService {
 
   async getAvailability() {
     return this.availabilityModel.find()
+  }
+
+  async getAvailabilityByDate(
+    dateString?: string, 
+    timeString?: string, 
+    consultationType?: string
+  ) {
+    // Use provided date or default to current date
+    const targetDate = dateString ? new Date(dateString) : new Date()
+    
+    // Get the day of week (0 = Sunday, 1 = Monday, etc.)
+    const dayOfWeek = targetDate.getDay()
+
+    // Build query for availability
+    const availabilityQuery: any = {
+      dayOfWeek,
+      isAvailable: true,
+    }
+
+    // Add consultation type filter if provided
+    if (consultationType) {
+      if (!['physical', 'virtual'].includes(consultationType)) {
+        throw new BadRequestException('Invalid consultation type. Must be "physical" or "virtual"')
+      }
+      availabilityQuery.consultationType = consultationType
+    }
+
+    // Fetch availability for that specific day
+    const availability = await this.availabilityModel.find(availabilityQuery)
+
+    // Get booked appointments for that date
+    const startOfDay = new Date(targetDate)
+    startOfDay.setHours(0, 0, 0, 0)
+    
+    const endOfDay = new Date(targetDate)
+    endOfDay.setHours(23, 59, 59, 999)
+
+    const appointmentQuery: any = {
+      date: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+      status: { $ne: "canceled" },
+    }
+
+    // Add time filter if provided
+    if (timeString) {
+      appointmentQuery.timeSlot = timeString
+    }
+
+    const bookedAppointments = await this.appointmentModel.find(appointmentQuery)
+
+    // Map to extract booked time slots and consultation types
+    const bookedSlots = bookedAppointments.map(apt => ({
+      timeSlot: apt.timeSlot,
+      consultationType: apt.consultationType,
+    }))
+
+    // If specific time is requested, check if it's available
+    if (timeString) {
+      const timeAvailability = availability.map(avail => {
+        const timeSlot = avail.timeSlots.find(slot => slot.startTime === timeString)
+        
+        if (!timeSlot) {
+          return {
+            consultationType: avail.consultationType,
+            isAvailable: false,
+            reason: 'Time slot not in schedule',
+          }
+        }
+
+        const isBooked = bookedSlots.some(
+          booked =>
+            booked.timeSlot === timeString &&
+            booked.consultationType === avail.consultationType
+        )
+
+        return {
+          consultationType: avail.consultationType,
+          time: timeString,
+          timeSlot,
+          isAvailable: !isBooked,
+          reason: isBooked ? 'Already booked' : null,
+        }
+      })
+
+      return {
+        date: targetDate.toISOString().split('T')[0],
+        dayOfWeek,
+        time: timeString,
+        availability: timeAvailability,
+      }
+    }
+
+    // Filter out booked slots from available slots (when no specific time requested)
+    const availableSlots = availability.map(avail => {
+      const availableTimeSlots = avail.timeSlots.map(slot => {
+        const isBooked = bookedSlots.some(
+          booked =>
+            booked.timeSlot === slot.startTime &&
+            booked.consultationType === avail.consultationType
+        )
+        
+        return {
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          isAvailable: !isBooked,
+        }
+      })
+
+      return {
+        _id: avail._id,
+        dayOfWeek: avail.dayOfWeek,
+        consultationType: avail.consultationType,
+        isAvailable: avail.isAvailable,
+        timeSlots: availableTimeSlots,
+      }
+    })
+
+    return {
+      date: targetDate.toISOString().split('T')[0],
+      dayOfWeek,
+      availability: availableSlots,
+    }
   }
 
   async updateSettings(settingsData: any) {
