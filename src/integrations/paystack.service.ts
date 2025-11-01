@@ -6,7 +6,13 @@ export class PaystackService {
   private baseUrl = "https://api.paystack.co"
   private secretKey = process.env.PAYSTACK_SECRET_KEY
 
-  async initializePayment(data: any) {
+  async initializePayment(data: {
+    email: string
+    amount: number
+    reference: string
+    callback_url?: string
+    metadata?: any
+  }) {
     try {
       const response = await axios.post(`${this.baseUrl}/transaction/initialize`, data, {
         headers: {
@@ -46,7 +52,7 @@ export class PaystackService {
       return response.data.data
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
-      throw new Error(`Error generating Google Meet link: ${errorMessage}`)
+      throw new Error(`Error fetching payment details: ${errorMessage}`)
     }
   }
 }

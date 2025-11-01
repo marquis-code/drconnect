@@ -1,5 +1,5 @@
-import { Controller, Post, Get, Param, UseGuards, Query, Body, Req, Res } from "@nestjs/common"
-import { Request, Response } from "express"
+import { Controller, Post, Get, Param, UseGuards, Query, Body, Res } from "@nestjs/common"
+import { Response } from "express"
 import { PaymentsService } from "./payments.service"
 import { InitiatePaymentDto } from "./dto/initiate-payment.dto"
 import { JwtAuthGuard } from "src/auth/guards/jwt.guard"
@@ -16,7 +16,19 @@ export class PaymentsController {
     return this.paymentsService.initiatePayment(user.userId, initiatePaymentDto)
   }
 
-  // NEW: Paystack callback endpoint (no auth guard needed for callback)
+  /**
+   * Paystack Callback Endpoint
+   * 
+   * This endpoint is called when Paystack redirects the user back after payment.
+   * Flow:
+   * 1. User completes payment on Paystack
+   * 2. Paystack redirects browser to this endpoint with reference in query params
+   * 3. We verify the payment with Paystack API
+   * 4. We update transaction and appointment status in database
+   * 5. We redirect user to frontend with result
+   * 
+   * Note: No auth guard needed as this is a public callback from Paystack
+   */
   @Get("callback/paystack")
   async paystackCallback(
     @Query("reference") reference: string,
@@ -27,27 +39,43 @@ export class PaymentsController {
       const transactionRef = reference || trxref
       
       if (!transactionRef) {
-        // Redirect to frontend with error
-        return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=No transaction reference`)
+        console.error('Paystack callback: No transaction reference provided')
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference')}`
+        )
       }
 
-      // Verify the payment
+      console.log('Paystack callback: Processing payment for reference:', transactionRef)
+
+      // Verify the payment - this also updates the booking status
       const verificationResult = await this.paymentsService.verifyPayment(transactionRef, 'Paystack')
       
+      console.log('Paystack callback: Verification result:', verificationResult.status)
+
       if (verificationResult.status === 'success') {
-        // Redirect to frontend success page
-        return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=success&reference=${transactionRef}`)
+        // Payment verified successfully and booking status updated to confirmed
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/booking/payment-callback?status=success&reference=${transactionRef}`
+        )
       } else {
-        // Redirect to frontend with failure
-        return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=failed&reference=${transactionRef}`)
+        // Payment verification failed
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/booking/payment-callback?status=failed&reference=${transactionRef}&message=${encodeURIComponent(verificationResult.message || 'Payment verification failed')}`
+        )
       }
     } catch (error) {
       console.error('Paystack callback error:', error)
-      return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=Verification failed`)
+      const errorMessage = error instanceof Error ? error.message : 'Verification failed'
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent(errorMessage)}`
+      )
     }
   }
 
-  // Keep this for manual verification if needed
+  /**
+   * Manual Verification Endpoint
+   * Can be used for debugging or manual retry of verification
+   */
   @Post("verify")
   @UseGuards(JwtAuthGuard)
   async verifyPayment(@Query("reference") reference: string, @Query("method") method: string) {

@@ -47,8 +47,9 @@ export class PaymentsService {
     if (paymentMethod === "Paystack") {
       paymentData = await this.paystackService.initializePayment({
         email,
-        amount: amount * 100,
+        amount: amount * 100, // Paystack expects amount in kobo (smallest currency unit)
         reference: transactionRef,
+        callback_url: `${process.env.API_URL}/payments/callback/paystack`, // Critical: This tells Paystack where to redirect
         metadata: {
           appointmentId,
           userId,
@@ -96,53 +97,122 @@ export class PaymentsService {
       throw new NotFoundException("Transaction not found")
     }
 
+    // Prevent duplicate verification - if already successful, return early
+    if (transaction.paymentStatus === "successful") {
+      const appointment = await this.appointmentModel.findById(transaction.appointmentId)
+      return {
+        status: "success",
+        message: "Payment already verified",
+        appointment,
+        transaction,
+      }
+    }
+
     let verificationResult: any
 
     if (paymentMethod === "Paystack") {
       verificationResult = await this.paystackService.verifyPayment(transactionRef)
+      
+      // Paystack returns status as "success" in the response
+      if (verificationResult.status === "success") {
+        transaction.paymentStatus = "successful"
+        transaction.paystackReference = verificationResult.reference
+        await transaction.save()
+
+        // Update appointment payment status AND booking status
+        const appointment = await this.appointmentModel.findByIdAndUpdate(
+          transaction.appointmentId,
+          { 
+            paymentStatus: "successful", 
+            transactionId: transaction._id,
+            status: "confirmed" // Update booking status to confirmed
+          },
+          { new: true },
+        )
+
+        // Send payment confirmation
+        const user = await this.userModel.findById(transaction.userId)
+        if (user) {
+          await this.notificationService.sendPaymentConfirmation(user.email, transaction)
+        }
+
+        return {
+          status: "success",
+          message: "Payment verified successfully",
+          appointment,
+          transaction,
+        }
+      } else {
+        // Payment failed or pending
+        transaction.paymentStatus = "failed"
+        await transaction.save()
+
+        // Update appointment to failed/cancelled
+        await this.appointmentModel.findByIdAndUpdate(
+          transaction.appointmentId,
+          { 
+            paymentStatus: "failed",
+            status: "cancelled"
+          }
+        )
+
+        return {
+          status: "failed",
+          message: "Payment verification failed",
+          transaction,
+        }
+      }
     } else if (paymentMethod === "Mono") {
       verificationResult = await this.monoService.verifyPayment(transactionRef)
+      
+      if (verificationResult.status === "success") {
+        transaction.paymentStatus = "successful"
+        transaction.monoReference = verificationResult.reference
+        await transaction.save()
+
+        // Update appointment payment status
+        const appointment = await this.appointmentModel.findByIdAndUpdate(
+          transaction.appointmentId,
+          { 
+            paymentStatus: "successful", 
+            transactionId: transaction._id,
+            status: "confirmed"
+          },
+          { new: true },
+        )
+
+        // Send payment confirmation
+        const user = await this.userModel.findById(transaction.userId)
+        if (user) {
+          await this.notificationService.sendPaymentConfirmation(user.email, transaction)
+        }
+
+        return {
+          status: "success",
+          message: "Payment verified successfully",
+          appointment,
+          transaction,
+        }
+      } else {
+        transaction.paymentStatus = "failed"
+        await transaction.save()
+
+        await this.appointmentModel.findByIdAndUpdate(
+          transaction.appointmentId,
+          { 
+            paymentStatus: "failed",
+            status: "cancelled"
+          }
+        )
+
+        return {
+          status: "failed",
+          message: "Payment verification failed",
+          transaction,
+        }
+      }
     } else {
       throw new BadRequestException("Invalid payment method")
-    }
-
-    if (verificationResult.status === "success") {
-      transaction.paymentStatus = "successful"
-      if (paymentMethod === "Mono") {
-        transaction.monoReference = verificationResult.reference
-      } else {
-        transaction.paystackReference = verificationResult.reference
-      }
-      await transaction.save()
-
-      // Update appointment payment status
-      const appointment = await this.appointmentModel.findByIdAndUpdate(
-        transaction.appointmentId,
-        { paymentStatus: "successful", transactionId: transaction._id },
-        { new: true },
-      )
-
-      // Send payment confirmation
-      const user = await this.userModel.findById(transaction.userId)
-      if (user) {
-        await this.notificationService.sendPaymentConfirmation(user.email, transaction)
-      }
-
-      return {
-        status: "success",
-        message: "Payment verified successfully",
-        appointment,
-        transaction,
-      }
-    } else {
-      transaction.paymentStatus = "failed"
-      await transaction.save()
-
-      return {
-        status: "failed",
-        message: "Payment verification failed",
-        transaction,
-      }
     }
   }
 
