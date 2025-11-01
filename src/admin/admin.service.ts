@@ -87,10 +87,15 @@ export class AdminService {
     consultationType?: string
   ) {
     // Use provided date or default to current date
-    const targetDate = dateString ? new Date(dateString) : new Date()
+    const now = new Date()
+    const targetDate = dateString ? new Date(dateString) : now
     
     // Get the day of week (0 = Sunday, 1 = Monday, etc.)
     const dayOfWeek = targetDate.getDay()
+
+    // Format current time as HH:MM if no time string provided
+    const currentTimeString = timeString || 
+      `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
 
     // Build query for availability
     const availabilityQuery: any = {
@@ -124,9 +129,9 @@ export class AdminService {
       status: { $ne: "canceled" },
     }
 
-    // Add time filter if provided
-    if (timeString) {
-      appointmentQuery.timeSlot = timeString
+    // Add consultation type filter to appointment query if provided
+    if (consultationType) {
+      appointmentQuery.consultationType = consultationType
     }
 
     const bookedAppointments = await this.appointmentModel.find(appointmentQuery)
@@ -137,10 +142,12 @@ export class AdminService {
       consultationType: apt.consultationType,
     }))
 
-    // If specific time is requested, check if it's available
-    if (timeString) {
+    // If specific time is requested (or defaulting to current time)
+    if (timeString || !dateString) {
+      const checkTimeString = timeString || currentTimeString
+      
       const timeAvailability = availability.map(avail => {
-        const timeSlot = avail.timeSlots.find(slot => slot.startTime === timeString)
+        const timeSlot = avail.timeSlots.find(slot => slot.startTime === checkTimeString)
         
         if (!timeSlot) {
           return {
@@ -152,13 +159,13 @@ export class AdminService {
 
         const isBooked = bookedSlots.some(
           booked =>
-            booked.timeSlot === timeString &&
+            booked.timeSlot === checkTimeString &&
             booked.consultationType === avail.consultationType
         )
 
         return {
           consultationType: avail.consultationType,
-          time: timeString,
+          time: checkTimeString,
           timeSlot,
           isAvailable: !isBooked,
           reason: isBooked ? 'Already booked' : null,
@@ -168,12 +175,12 @@ export class AdminService {
       return {
         date: targetDate.toISOString().split('T')[0],
         dayOfWeek,
-        time: timeString,
+        time: checkTimeString,
         availability: timeAvailability,
       }
     }
 
-    // Filter out booked slots from available slots (when no specific time requested)
+    // Filter out booked slots from available slots (when date is provided but no time)
     const availableSlots = availability.map(avail => {
       const availableTimeSlots = avail.timeSlots.map(slot => {
         const isBooked = bookedSlots.some(

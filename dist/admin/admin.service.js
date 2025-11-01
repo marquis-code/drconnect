@@ -83,8 +83,11 @@ let AdminService = class AdminService {
         return this.availabilityModel.find();
     }
     async getAvailabilityByDate(dateString, timeString, consultationType) {
-        const targetDate = dateString ? new Date(dateString) : new Date();
+        const now = new Date();
+        const targetDate = dateString ? new Date(dateString) : now;
         const dayOfWeek = targetDate.getDay();
+        const currentTimeString = timeString ||
+            `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         const availabilityQuery = {
             dayOfWeek,
             isAvailable: true,
@@ -107,17 +110,18 @@ let AdminService = class AdminService {
             },
             status: { $ne: "canceled" },
         };
-        if (timeString) {
-            appointmentQuery.timeSlot = timeString;
+        if (consultationType) {
+            appointmentQuery.consultationType = consultationType;
         }
         const bookedAppointments = await this.appointmentModel.find(appointmentQuery);
         const bookedSlots = bookedAppointments.map(apt => ({
             timeSlot: apt.timeSlot,
             consultationType: apt.consultationType,
         }));
-        if (timeString) {
+        if (timeString || !dateString) {
+            const checkTimeString = timeString || currentTimeString;
             const timeAvailability = availability.map(avail => {
-                const timeSlot = avail.timeSlots.find(slot => slot.startTime === timeString);
+                const timeSlot = avail.timeSlots.find(slot => slot.startTime === checkTimeString);
                 if (!timeSlot) {
                     return {
                         consultationType: avail.consultationType,
@@ -125,11 +129,11 @@ let AdminService = class AdminService {
                         reason: 'Time slot not in schedule',
                     };
                 }
-                const isBooked = bookedSlots.some(booked => booked.timeSlot === timeString &&
+                const isBooked = bookedSlots.some(booked => booked.timeSlot === checkTimeString &&
                     booked.consultationType === avail.consultationType);
                 return {
                     consultationType: avail.consultationType,
-                    time: timeString,
+                    time: checkTimeString,
                     timeSlot,
                     isAvailable: !isBooked,
                     reason: isBooked ? 'Already booked' : null,
@@ -138,7 +142,7 @@ let AdminService = class AdminService {
             return {
                 date: targetDate.toISOString().split('T')[0],
                 dayOfWeek,
-                time: timeString,
+                time: checkTimeString,
                 availability: timeAvailability,
             };
         }
