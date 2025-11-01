@@ -60,7 +60,7 @@ let AuthService = class AuthService {
         this.notificationService = notificationService;
     }
     async register(registerDto) {
-        const { email, password, name, phone } = registerDto;
+        const { email, password, name, phone, role } = registerDto;
         const existingUser = await this.userModel.findOne({ email });
         if (existingUser) {
             throw new common_1.ConflictException("Email already registered");
@@ -73,6 +73,7 @@ let AuthService = class AuthService {
             password,
             verificationToken,
             authProvider: "email",
+            role: role !== null && role !== void 0 ? role : "user",
         });
         await user.save();
         return {

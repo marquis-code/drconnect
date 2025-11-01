@@ -1,9 +1,11 @@
+import { Response } from "express";
 import { PaymentsService } from "./payments.service";
 import { InitiatePaymentDto } from "./dto/initiate-payment.dto";
 export declare class PaymentsController {
     private paymentsService;
     constructor(paymentsService: PaymentsService);
     initiatePayment(initiatePaymentDto: InitiatePaymentDto, user: any): Promise<any>;
+    paystackCallback(reference: string, trxref: string, res: Response): Promise<void>;
     verifyPayment(reference: string, method: string): Promise<{
         status: string;
         message: string;

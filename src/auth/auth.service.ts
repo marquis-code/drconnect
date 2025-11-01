@@ -18,35 +18,66 @@ export class AuthService {
     private notificationService: NotificationService,
   ) {}
 
+  // async register(registerDto: RegisterDto) {
+  //   const { email, password, name, phone } = registerDto
+
+  //   const existingUser = await this.userModel.findOne({ email })
+  //   if (existingUser) {
+  //     throw new ConflictException("Email already registered")
+  //   }
+
+  //   const verificationToken = crypto.randomBytes(32).toString("hex")
+
+  //   const user = new this.userModel({
+  //     name,
+  //     email,
+  //     phone,
+  //     password,
+  //     verificationToken,
+  //     authProvider: "email",
+  //   })
+
+  //   await user.save()
+
+  //   // Send verification email
+  //   // await this.notificationService.sendVerificationEmail(email, verificationToken)
+
+  //   return {
+  //     message: "Registration successful. Please verify your email.",
+  //     userId: user._id,
+  //   }
+  // }
   async register(registerDto: RegisterDto) {
-    const { email, password, name, phone } = registerDto
+  const { email, password, name, phone, role } = registerDto
 
-    const existingUser = await this.userModel.findOne({ email })
-    if (existingUser) {
-      throw new ConflictException("Email already registered")
-    }
-
-    const verificationToken = crypto.randomBytes(32).toString("hex")
-
-    const user = new this.userModel({
-      name,
-      email,
-      phone,
-      password,
-      verificationToken,
-      authProvider: "email",
-    })
-
-    await user.save()
-
-    // Send verification email
-    // await this.notificationService.sendVerificationEmail(email, verificationToken)
-
-    return {
-      message: "Registration successful. Please verify your email.",
-      userId: user._id,
-    }
+  const existingUser = await this.userModel.findOne({ email })
+  if (existingUser) {
+    throw new ConflictException("Email already registered")
   }
+
+  const verificationToken = crypto.randomBytes(32).toString("hex")
+
+  const user = new this.userModel({
+    name,
+    email,
+    phone,
+    password,
+    verificationToken,
+    authProvider: "email",
+    role: role ?? "user", // ✅ set default role if not provided
+  })
+
+  await user.save()
+
+  // Send verification email
+  // await this.notificationService.sendVerificationEmail(email, verificationToken)
+
+  return {
+    message: "Registration successful. Please verify your email.",
+    userId: user._id,
+  }
+}
+
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto

@@ -55,7 +55,7 @@ let PaystackService = class PaystackService {
         }
         catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Unknown error";
-            throw new Error(`Error generating Google Meet link: ${errorMessage}`);
+            throw new Error(`Error fetching payment details: ${errorMessage}`);
         }
     }
 };

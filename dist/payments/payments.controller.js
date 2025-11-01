@@ -26,6 +26,29 @@ let PaymentsController = class PaymentsController {
     async initiatePayment(initiatePaymentDto, user) {
         return this.paymentsService.initiatePayment(user.userId, initiatePaymentDto);
     }
+    async paystackCallback(reference, trxref, res) {
+        try {
+            const transactionRef = reference || trxref;
+            if (!transactionRef) {
+                console.error('Paystack callback: No transaction reference provided');
+                return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference')}`);
+            }
+            console.log('Paystack callback: Processing payment for reference:', transactionRef);
+            const verificationResult = await this.paymentsService.verifyPayment(transactionRef, 'Paystack');
+            console.log('Paystack callback: Verification result:', verificationResult.status);
+            if (verificationResult.status === 'success') {
+                return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=success&reference=${transactionRef}`);
+            }
+            else {
+                return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=failed&reference=${transactionRef}&message=${encodeURIComponent(verificationResult.message || 'Payment verification failed')}`);
+            }
+        }
+        catch (error) {
+            console.error('Paystack callback error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Verification failed';
+            return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent(errorMessage)}`);
+        }
+    }
     async verifyPayment(reference, method) {
         return this.paymentsService.verifyPayment(reference, method);
     }
@@ -45,6 +68,7 @@ let PaymentsController = class PaymentsController {
 exports.PaymentsController = PaymentsController;
 __decorate([
     (0, common_1.Post)("initiate"),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -52,7 +76,17 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PaymentsController.prototype, "initiatePayment", null);
 __decorate([
+    (0, common_1.Get)("callback/paystack"),
+    __param(0, (0, common_1.Query)("reference")),
+    __param(1, (0, common_1.Query)("trxref")),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], PaymentsController.prototype, "paystackCallback", null);
+__decorate([
     (0, common_1.Post)("verify"),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Query)("reference")),
     __param(1, (0, common_1.Query)("method")),
     __metadata("design:type", Function),
@@ -61,6 +95,7 @@ __decorate([
 ], PaymentsController.prototype, "verifyPayment", null);
 __decorate([
     (0, common_1.Get)("history"),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -68,14 +103,14 @@ __decorate([
 ], PaymentsController.prototype, "getTransactionHistory", null);
 __decorate([
     (0, common_1.Get)("all"),
-    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], PaymentsController.prototype, "getAllTransactions", null);
 __decorate([
     (0, common_1.Get)("mono/history"),
-    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
     __param(0, (0, common_1.Query)("page")),
     __param(1, (0, common_1.Query)("startDate")),
     __param(2, (0, common_1.Query)("endDate")),
@@ -85,6 +120,7 @@ __decorate([
 ], PaymentsController.prototype, "getMonoTransactionHistory", null);
 __decorate([
     (0, common_1.Get)(":id"),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Param)("id")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -92,7 +128,6 @@ __decorate([
 ], PaymentsController.prototype, "getTransactionById", null);
 exports.PaymentsController = PaymentsController = __decorate([
     (0, common_1.Controller)("payments"),
-    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [payments_service_1.PaymentsService])
 ], PaymentsController);
 //# sourceMappingURL=payments.controller.js.map
