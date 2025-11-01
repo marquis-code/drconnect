@@ -16,19 +16,6 @@ export class PaymentsController {
     return this.paymentsService.initiatePayment(user.userId, initiatePaymentDto)
   }
 
-  /**
-   * Paystack Callback Endpoint
-   * 
-   * This endpoint is called when Paystack redirects the user back after payment.
-   * Flow:
-   * 1. User completes payment on Paystack
-   * 2. Paystack redirects browser to this endpoint with reference in query params
-   * 3. We verify the payment with Paystack API
-   * 4. We update transaction and appointment status in database
-   * 5. We redirect user to frontend with result
-   * 
-   * Note: No auth guard needed as this is a public callback from Paystack
-   */
   @Get("callback/paystack")
   async paystackCallback(
     @Query("reference") reference: string,
@@ -72,10 +59,7 @@ export class PaymentsController {
     }
   }
 
-  /**
-   * Manual Verification Endpoint
-   * Can be used for debugging or manual retry of verification
-   */
+
   @Post("verify")
   @UseGuards(JwtAuthGuard)
   async verifyPayment(@Query("reference") reference: string, @Query("method") method: string) {
