@@ -25,38 +25,6 @@ export class GoogleMeetService {
     return res.data.access_token;
   }
 
-  // async generateMeetLink(): Promise<string> {
-  //   try {
-  //     const accessToken = await this.getAccessToken();
-
-  //     const response = await axios.post(
-  //       "https://www.googleapis.com/calendar/v3/calendars/primary/events",
-  //       {
-  //         summary: "DrConnect Consultation",
-  //         conferenceData: {
-  //           createRequest: {
-  //             requestId: `${Date.now()}`,
-  //             conferenceSolutionKey: {
-  //               key: "hangoutsMeet",
-  //             },
-  //           },
-  //         },
-  //       },
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${accessToken}`,
-  //           "Content-Type": "application/json",
-  //         },
-  //         params: { conferenceDataVersion: 1 },
-  //       },
-  //     );
-
-  //     return response.data.conferenceData.entryPoints[0].uri;
-  //   } catch (error) {
-  //     console.error("❌ Error generating Google Meet link", error?.response?.data || error);
-  //     throw new Error("Failed to generate Google Meet link");
-  //   }
-  // }
   async generateMeetLink(date: string, timeSlot: string): Promise<string> {
   try {
     const accessToken = await this.getAccessToken();
