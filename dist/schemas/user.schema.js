@@ -46,6 +46,7 @@ exports.UserSchema = exports.User = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const bcrypt = __importStar(require("bcryptjs"));
+const libphonenumber_js_1 = require("libphonenumber-js");
 let User = class User extends mongoose_2.Document {
 };
 exports.User = User;
@@ -58,7 +59,15 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "email", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_1.Prop)({
+        required: true,
+        validate: {
+            validator: function (value) {
+                return (0, libphonenumber_js_1.isValidPhoneNumber)(value);
+            },
+            message: 'Phone number must be a valid phone number'
+        }
+    }),
     __metadata("design:type", String)
 ], User.prototype, "phone", void 0);
 __decorate([
