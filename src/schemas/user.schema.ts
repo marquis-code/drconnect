@@ -35,7 +35,7 @@ export class User extends Document {
   @Prop({ enum: ["user", "admin"], default: "user" })
   role: string;
 
-  @Prop({ default: false })
+  @Prop({ default: true })
   emailVerified: boolean;
 
   @Prop({ type: String, default: null })
