@@ -28,9 +28,9 @@ export class NotificationService {
     const mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: email,
-      subject: "Verify Your DrConnect Account",
+      subject: "Verify Your DoctorDey Account",
       html: `
-        <h2>Welcome to DrConnect</h2>
+        <h2>Welcome to DoctorDey</h2>
         <p>Please verify your email by clicking the link below:</p>
         <a href="${verificationLink}">Verify Email</a>
         <p>This link expires in 24 hours.</p>
@@ -46,7 +46,7 @@ export class NotificationService {
     const mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: email,
-      subject: "Reset Your DrConnect Password",
+      subject: "Reset Your DoctorDey Password",
       html: `
         <h2>Password Reset Request</h2>
         <p>Click the link below to reset your password:</p>
@@ -62,7 +62,7 @@ export class NotificationService {
     const mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: email,
-      subject: "Booking Confirmation - DrConnect",
+      subject: "Booking Confirmation - DoctorDey",
       html: `
         <h2>Your Appointment is Confirmed</h2>
         <p><strong>Type:</strong> ${appointmentData.consultationType}</p>
@@ -81,7 +81,7 @@ export class NotificationService {
     const mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: email,
-      subject: "Payment Confirmation - DrConnect",
+      subject: "Payment Confirmation - DoctorDey",
       html: `
         <h2>Payment Received</h2>
         <p><strong>Amount:</strong> ${transactionData.amount}</p>
@@ -98,7 +98,7 @@ export class NotificationService {
     const mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: email,
-      subject: "Appointment Reminder - DrConnect",
+      subject: "Appointment Reminder - DoctorDey",
       html: `
         <h2>Appointment Reminder</h2>
         <p>Your appointment is scheduled for tomorrow at ${appointmentData.timeSlot}</p>

@@ -190,8 +190,8 @@ let AdminService = class AdminService {
                 clinicLocation: "Lagos, Nigeria",
                 clinicLatitude: 6.5244,
                 clinicLongitude: 3.3792,
-                contactEmail: "contact@drconnect.com",
-                contactPhone: "+234800000000",
+                contactEmail: "info.doctordey@gmail.com",
+                contactPhone: "+2348034080064",
             });
             await settings.save();
         }

@@ -45,6 +45,7 @@
     "compression": "^1.8.1",
     "crypto": "latest",
     "dotenv": "^16.3.1",
+    "googleapis": "^169.0.0",
     "helmet": "^8.1.0",
     "libphonenumber-js": "^1.12.31",
     "mongoose": "latest",

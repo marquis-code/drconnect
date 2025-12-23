@@ -1,7 +1,11 @@
+import { ConfigService } from "@nestjs/config";
 export declare class GoogleMeetService {
-    private clientId;
-    private clientSecret;
-    private refreshToken;
+    private configService;
+    private readonly logger;
+    private readonly clientId;
+    private readonly clientSecret;
+    private readonly refreshToken;
+    constructor(configService: ConfigService);
     private getAccessToken;
     generateMeetLink(date: string, timeSlot: string): Promise<string>;
 }
