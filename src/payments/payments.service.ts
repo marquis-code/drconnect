@@ -257,6 +257,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common"
 import { InjectModel } from "@nestjs/mongoose"
+import { ConfigService } from "@nestjs/config"
 import { type Model, Types } from "mongoose"
 import { Transaction } from "src/schemas/transaction.schema"
 import { Appointment } from "src/schemas/appointment.schema"
@@ -264,7 +265,7 @@ import { User } from "src/schemas/user.schema"
 import { InitiatePaymentDto } from "./dto/initiate-payment.dto"
 import { PaystackService } from "src/integrations/paystack.service"
 import { MonoService } from "src/integrations/mono.service"
-import { AppointmentsService } from "src/appointments/appointments.service" // ✅ ADD THIS
+import { AppointmentsService } from "src/appointments/appointments.service"
 
 @Injectable()
 export class PaymentsService {
@@ -274,7 +275,8 @@ export class PaymentsService {
     @InjectModel(User.name) private userModel: Model<User>,
     private paystackService: PaystackService,
     private monoService: MonoService,
-    private appointmentsService: AppointmentsService, // ✅ ADD THIS
+    private appointmentsService: AppointmentsService,
+    private configService: ConfigService,
   ) {}
 
   async initiatePayment(userId: string, initiatePaymentDto: InitiatePaymentDto) {
@@ -286,12 +288,12 @@ export class PaymentsService {
       throw new NotFoundException("Appointment not found")
     }
 
-    // ✅ Verify appointment belongs to the user
+    // Verify appointment belongs to the user
     if (appointment.userId.toString() !== userId) {
       throw new BadRequestException("Unauthorized to pay for this appointment")
     }
 
-    // ✅ Check if payment already successful
+    // Check if payment already successful
     if (appointment.paymentStatus === "successful") {
       throw new BadRequestException("This appointment has already been paid for")
     }
@@ -312,11 +314,13 @@ export class PaymentsService {
     let paymentData: any
 
     if (paymentMethod === "Paystack") {
+      const apiUrl = this.configService.get<string>("API_URL")
+      
       paymentData = await this.paystackService.initializePayment({
         email,
         amount: amount * 100, // Paystack expects amount in kobo
         reference: transactionRef,
-        callback_url: `${process.env.API_URL}/payments/callback/paystack`,
+        callback_url: `${apiUrl}/payments/callback/paystack`,
         metadata: {
           appointmentId,
           userId,
@@ -324,13 +328,15 @@ export class PaymentsService {
         },
       })
     } else if (paymentMethod === "Mono") {
+      const frontendUrl = this.configService.get<string>("FRONTEND_URL")
+      
       paymentData = await this.monoService.initializePayment({
         amount,
         type: "onetime-debit",
         method: "account",
         description: description || `Doctor Dey Consultation - ${transactionRef}`,
         reference: transactionRef,
-        redirect_url: redirectUrl || `${process.env.FRONTEND_URL}/booking/payment-callback`,
+        redirect_url: redirectUrl || `${frontendUrl}/booking/payment-callback`,
         customer: {
           email,
           phone,
@@ -366,7 +372,7 @@ export class PaymentsService {
       throw new NotFoundException("Transaction not found")
     }
 
-    // ✅ Prevent duplicate verification
+    // Prevent duplicate verification
     if (transaction.paymentStatus === "successful") {
       const appointment = await this.appointmentModel
         .findById(transaction.appointmentId)
@@ -387,12 +393,12 @@ export class PaymentsService {
       verificationResult = await this.paystackService.verifyPayment(transactionRef)
       
       if (verificationResult.status === "success") {
-        // ✅ Update transaction
+        // Update transaction
         transaction.paymentStatus = "successful"
         transaction.paystackReference = verificationResult.reference
         await transaction.save()
 
-        // ✅ Update appointment payment status
+        // Update appointment payment status
         await this.appointmentModel.findByIdAndUpdate(
           transaction.appointmentId,
           { 
@@ -402,7 +408,7 @@ export class PaymentsService {
           },
         )
 
-        // ✅ Generate Google Meet link for virtual consultations
+        // Generate Google Meet link for virtual consultations
         let meetLink = null
         const appointment = await this.appointmentModel.findById(transaction.appointmentId)
         
@@ -417,7 +423,7 @@ export class PaymentsService {
           }
         }
 
-        // ✅ Get updated appointment with populated user
+        // Get updated appointment with populated user
         const updatedAppointment = await this.appointmentModel
           .findById(transaction.appointmentId)
           .populate("userId", "name email phone")

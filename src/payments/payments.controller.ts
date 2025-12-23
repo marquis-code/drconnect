@@ -98,6 +98,7 @@
 
 import { Controller, Post, Get, Param, UseGuards, Query, Body, Res, Logger } from "@nestjs/common"
 import { Response } from "express"
+import { ConfigService } from "@nestjs/config"
 import { PaymentsService } from "./payments.service"
 import { InitiatePaymentDto } from "./dto/initiate-payment.dto"
 import { JwtAuthGuard } from "src/auth/guards/jwt.guard"
@@ -108,7 +109,10 @@ import { CurrentUser } from "src/auth/decorators/current-user.decorator"
 export class PaymentsController {
   private readonly logger = new Logger(PaymentsController.name)
 
-  constructor(private paymentsService: PaymentsService) {}
+  constructor(
+    private paymentsService: PaymentsService,
+    private configService: ConfigService,
+  ) {}
 
   @Post("initiate")
   @UseGuards(JwtAuthGuard)
@@ -123,18 +127,19 @@ export class PaymentsController {
     @Res() res: Response
   ) {
     try {
+      const frontendUrl = this.configService.get<string>("FRONTEND_URL")
       const transactionRef = reference || trxref
       
       if (!transactionRef) {
         this.logger.error('Paystack callback: No transaction reference provided')
         return res.redirect(
-          `${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference provided')}`
+          `${frontendUrl}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference provided')}`
         )
       }
 
       this.logger.log(`Paystack callback: Processing payment for reference: ${transactionRef}`)
 
-      // ✅ Verify payment, update appointment, and generate Meet link
+      // Verify payment, update appointment, and generate Meet link
       const verificationResult = await this.paymentsService.verifyPayment(transactionRef, 'Paystack')
       
       this.logger.log(`Paystack callback: Verification result - ${verificationResult.status}`)
@@ -143,8 +148,8 @@ export class PaymentsController {
         const appointmentId = verificationResult.appointment?._id || ''
         const meetLink = verificationResult.meetLink || ''
         
-        // ✅ Redirect with success and appointment details
-        const redirectUrl = new URL(`${process.env.FRONTEND_URL}/booking/payment-callback`)
+        // Redirect with success and appointment details
+        const redirectUrl = new URL(`${frontendUrl}/booking/payment-callback`)
         redirectUrl.searchParams.set('status', 'success')
         redirectUrl.searchParams.set('reference', transactionRef)
         redirectUrl.searchParams.set('appointmentId', appointmentId.toString())
@@ -157,7 +162,7 @@ export class PaymentsController {
         return res.redirect(redirectUrl.toString())
       } else {
         // Payment failed
-        const redirectUrl = new URL(`${process.env.FRONTEND_URL}/booking/payment-callback`)
+        const redirectUrl = new URL(`${frontendUrl}/booking/payment-callback`)
         redirectUrl.searchParams.set('status', 'failed')
         redirectUrl.searchParams.set('reference', transactionRef)
         redirectUrl.searchParams.set('message', encodeURIComponent(verificationResult.message || 'Payment verification failed'))
@@ -166,11 +171,12 @@ export class PaymentsController {
         return res.redirect(redirectUrl.toString())
       }
     } catch (error) {
+      const frontendUrl = this.configService.get<string>("FRONTEND_URL")
       this.logger.error('Paystack callback error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Verification failed'
       
       return res.redirect(
-        `${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent(errorMessage)}`
+        `${frontendUrl}/booking/payment-callback?status=error&message=${encodeURIComponent(errorMessage)}`
       )
     }
   }
@@ -181,10 +187,12 @@ export class PaymentsController {
     @Res() res: Response
   ) {
     try {
+      const frontendUrl = this.configService.get<string>("FRONTEND_URL")
+      
       if (!reference) {
         this.logger.error('Mono callback: No transaction reference provided')
         return res.redirect(
-          `${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference provided')}`
+          `${frontendUrl}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference provided')}`
         )
       }
 
@@ -198,7 +206,7 @@ export class PaymentsController {
         const appointmentId = verificationResult.appointment?._id || ''
         const meetLink = verificationResult.meetLink || ''
         
-        const redirectUrl = new URL(`${process.env.FRONTEND_URL}/booking/payment-callback`)
+        const redirectUrl = new URL(`${frontendUrl}/booking/payment-callback`)
         redirectUrl.searchParams.set('status', 'success')
         redirectUrl.searchParams.set('reference', reference)
         redirectUrl.searchParams.set('appointmentId', appointmentId.toString())
@@ -210,7 +218,7 @@ export class PaymentsController {
         this.logger.log(`✅ Payment successful - Redirecting to: ${redirectUrl.toString()}`)
         return res.redirect(redirectUrl.toString())
       } else {
-        const redirectUrl = new URL(`${process.env.FRONTEND_URL}/booking/payment-callback`)
+        const redirectUrl = new URL(`${frontendUrl}/booking/payment-callback`)
         redirectUrl.searchParams.set('status', 'failed')
         redirectUrl.searchParams.set('reference', reference)
         redirectUrl.searchParams.set('message', encodeURIComponent(verificationResult.message || 'Payment verification failed'))
@@ -219,11 +227,12 @@ export class PaymentsController {
         return res.redirect(redirectUrl.toString())
       }
     } catch (error) {
+      const frontendUrl = this.configService.get<string>("FRONTEND_URL")
       this.logger.error('Mono callback error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Verification failed'
       
       return res.redirect(
-        `${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent(errorMessage)}`
+        `${frontendUrl}/booking/payment-callback?status=error&message=${encodeURIComponent(errorMessage)}`
       )
     }
   }
