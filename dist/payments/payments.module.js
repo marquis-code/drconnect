@@ -16,7 +16,7 @@ const appointment_schema_1 = require("../schemas/appointment.schema");
 const user_schema_1 = require("../schemas/user.schema");
 const paystack_module_1 = require("../integrations/paystack.module");
 const mono_module_1 = require("../integrations/mono.module");
-const notification_module_1 = require("../notifications/notification.module");
+const appointments_module_1 = require("../appointments/appointments.module");
 let PaymentsModule = class PaymentsModule {
 };
 exports.PaymentsModule = PaymentsModule;
@@ -30,7 +30,7 @@ exports.PaymentsModule = PaymentsModule = __decorate([
             ]),
             paystack_module_1.PaystackModule,
             mono_module_1.MonoModule,
-            notification_module_1.NotificationModule,
+            appointments_module_1.AppointmentsModule,
         ],
         providers: [payments_service_1.PaymentsService],
         controllers: [payments_controller_1.PaymentsController],

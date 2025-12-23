@@ -17,16 +17,18 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const appointment_schema_1 = require("../schemas/appointment.schema");
-const notification_service_1 = require("../notifications/notification.service");
 const google_meet_service_1 = require("../integrations/google-meet.service");
 let AppointmentsService = class AppointmentsService {
-    constructor(appointmentModel, notificationService, googleMeetService) {
+    constructor(appointmentModel, googleMeetService) {
         this.appointmentModel = appointmentModel;
-        this.notificationService = notificationService;
         this.googleMeetService = googleMeetService;
     }
     async createAppointment(userId, createAppointmentDto) {
         const { consultationType, consultationMode, date, timeSlot, location, price } = createAppointmentDto;
+        const isSlotAvailable = await this.checkSlotAvailability(date, timeSlot, consultationType);
+        if (!isSlotAvailable) {
+            throw new common_1.BadRequestException(`This time slot is no longer available for ${consultationType} consultation. Please choose another time.`);
+        }
         const appointment = new this.appointmentModel({
             userId: new mongoose_2.Types.ObjectId(userId),
             consultationType,
@@ -38,17 +40,48 @@ let AppointmentsService = class AppointmentsService {
             paymentStatus: "pending",
             status: "booked",
         });
-        if (appointment.consultationType === "virtual") {
-            try {
-                const meetLink = await this.googleMeetService.generateMeetLink(date, timeSlot);
-                appointment.googleMeetLink = meetLink;
-            }
-            catch (error) {
-                console.error("Failed to generate Google Meet link:", error);
-            }
-        }
         await appointment.save();
         return appointment;
+    }
+    async checkSlotAvailability(date, timeSlot, consultationType) {
+        const targetDate = new Date(date);
+        const startOfDay = new Date(targetDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(targetDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        const existingAppointment = await this.appointmentModel.findOne({
+            date: {
+                $gte: startOfDay,
+                $lte: endOfDay,
+            },
+            timeSlot,
+            consultationType,
+            status: { $nin: ["canceled", "completed"] },
+        });
+        return !existingAppointment;
+    }
+    async generateMeetLinkAfterPayment(appointmentId) {
+        const appointment = await this.appointmentModel.findById(appointmentId);
+        if (!appointment) {
+            throw new common_1.NotFoundException("Appointment not found");
+        }
+        if (appointment.paymentStatus !== "successful") {
+            throw new common_1.BadRequestException("Payment must be successful before generating Meet link");
+        }
+        if (appointment.consultationType !== "virtual") {
+            throw new common_1.BadRequestException("Google Meet link is only for virtual consultations");
+        }
+        try {
+            const dateString = appointment.date.toISOString().split('T')[0];
+            const meetLink = await this.googleMeetService.generateMeetLink(dateString, appointment.timeSlot);
+            appointment.googleMeetLink = meetLink;
+            await appointment.save();
+            return meetLink;
+        }
+        catch (error) {
+            console.error("Failed to generate Google Meet link:", error);
+            throw new common_1.BadRequestException("Failed to generate Google Meet link");
+        }
     }
     async getAppointments(userId, role) {
         const query = {};
@@ -87,8 +120,21 @@ let AppointmentsService = class AppointmentsService {
         if (appointment.status === "canceled") {
             throw new common_1.BadRequestException("Cannot reschedule a canceled appointment");
         }
+        const isNewSlotAvailable = await this.checkSlotAvailability(newDate, newTimeSlot, appointment.consultationType);
+        if (!isNewSlotAvailable) {
+            throw new common_1.BadRequestException("The new time slot is not available. Please choose another time.");
+        }
         appointment.date = new Date(newDate);
         appointment.timeSlot = newTimeSlot;
+        if (appointment.consultationType === "virtual" && appointment.googleMeetLink) {
+            try {
+                const meetLink = await this.googleMeetService.generateMeetLink(newDate, newTimeSlot);
+                appointment.googleMeetLink = meetLink;
+            }
+            catch (error) {
+                console.error("Failed to regenerate Google Meet link:", error);
+            }
+        }
         await appointment.save();
         return appointment;
     }
@@ -111,7 +157,6 @@ exports.AppointmentsService = AppointmentsService;
 exports.AppointmentsService = AppointmentsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(appointment_schema_1.Appointment.name)),
-    __metadata("design:paramtypes", [Function, notification_service_1.NotificationService,
-        google_meet_service_1.GoogleMeetService])
+    __metadata("design:paramtypes", [Function, google_meet_service_1.GoogleMeetService])
 ], AppointmentsService);
 //# sourceMappingURL=appointments.service.js.map

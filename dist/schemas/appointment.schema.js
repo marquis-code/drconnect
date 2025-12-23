@@ -36,13 +36,9 @@ __decorate([
     __metadata("design:type", String)
 ], Appointment.prototype, "timeSlot", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ default: null }),
+    (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
 ], Appointment.prototype, "location", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ default: null }),
-    __metadata("design:type", String)
-], Appointment.prototype, "googleMeetLink", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", Number)
@@ -52,21 +48,21 @@ __decorate([
     __metadata("design:type", String)
 ], Appointment.prototype, "paymentStatus", void 0);
 __decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], Appointment.prototype, "transactionReference", void 0);
+__decorate([
     (0, mongoose_1.Prop)({ enum: ["booked", "completed", "canceled"], default: "booked" }),
     __metadata("design:type", String)
 ], Appointment.prototype, "status", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ default: null }),
-    __metadata("design:type", String)
-], Appointment.prototype, "transactionId", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ default: null }),
+    (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
 ], Appointment.prototype, "cancellationReason", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ default: null }),
+    (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
-], Appointment.prototype, "notes", void 0);
+], Appointment.prototype, "googleMeetLink", void 0);
 exports.Appointment = Appointment = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Appointment);

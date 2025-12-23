@@ -6,15 +6,12 @@ export declare class Appointment extends Document {
     date: Date;
     timeSlot: string;
     location: string;
-    googleMeetLink: string;
     price: number;
     paymentStatus: string;
+    transactionReference: string;
     status: string;
-    transactionId: string;
     cancellationReason: string;
-    notes: string;
-    createdAt?: Date;
-    updatedAt?: Date;
+    googleMeetLink: string;
 }
 export declare const AppointmentSchema: import("mongoose").Schema<Appointment, import("mongoose").Model<Appointment, any, any, any, Document<unknown, any, Appointment, any, {}> & Appointment & Required<{
     _id: unknown;

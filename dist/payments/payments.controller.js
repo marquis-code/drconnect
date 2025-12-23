@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var PaymentsController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentsController = void 0;
 const common_1 = require("@nestjs/common");
@@ -19,32 +20,87 @@ const initiate_payment_dto_1 = require("./dto/initiate-payment.dto");
 const jwt_guard_1 = require("../auth/guards/jwt.guard");
 const admin_guard_1 = require("../auth/guards/admin.guard");
 const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
-let PaymentsController = class PaymentsController {
+let PaymentsController = PaymentsController_1 = class PaymentsController {
     constructor(paymentsService) {
         this.paymentsService = paymentsService;
+        this.logger = new common_1.Logger(PaymentsController_1.name);
     }
     async initiatePayment(initiatePaymentDto, user) {
         return this.paymentsService.initiatePayment(user.userId, initiatePaymentDto);
     }
     async paystackCallback(reference, trxref, res) {
+        var _a;
         try {
             const transactionRef = reference || trxref;
             if (!transactionRef) {
-                console.error('Paystack callback: No transaction reference provided');
-                return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference')}`);
+                this.logger.error('Paystack callback: No transaction reference provided');
+                return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference provided')}`);
             }
-            console.log('Paystack callback: Processing payment for reference:', transactionRef);
+            this.logger.log(`Paystack callback: Processing payment for reference: ${transactionRef}`);
             const verificationResult = await this.paymentsService.verifyPayment(transactionRef, 'Paystack');
-            console.log('Paystack callback: Verification result:', verificationResult.status);
+            this.logger.log(`Paystack callback: Verification result - ${verificationResult.status}`);
             if (verificationResult.status === 'success') {
-                return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=success&reference=${transactionRef}`);
+                const appointmentId = ((_a = verificationResult.appointment) === null || _a === void 0 ? void 0 : _a._id) || '';
+                const meetLink = verificationResult.meetLink || '';
+                const redirectUrl = new URL(`${process.env.FRONTEND_URL}/booking/payment-callback`);
+                redirectUrl.searchParams.set('status', 'success');
+                redirectUrl.searchParams.set('reference', transactionRef);
+                redirectUrl.searchParams.set('appointmentId', appointmentId.toString());
+                if (meetLink) {
+                    redirectUrl.searchParams.set('meetLink', encodeURIComponent(meetLink));
+                }
+                this.logger.log(`✅ Payment successful - Redirecting to: ${redirectUrl.toString()}`);
+                return res.redirect(redirectUrl.toString());
             }
             else {
-                return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=failed&reference=${transactionRef}&message=${encodeURIComponent(verificationResult.message || 'Payment verification failed')}`);
+                const redirectUrl = new URL(`${process.env.FRONTEND_URL}/booking/payment-callback`);
+                redirectUrl.searchParams.set('status', 'failed');
+                redirectUrl.searchParams.set('reference', transactionRef);
+                redirectUrl.searchParams.set('message', encodeURIComponent(verificationResult.message || 'Payment verification failed'));
+                this.logger.warn(`❌ Payment failed - Redirecting to: ${redirectUrl.toString()}`);
+                return res.redirect(redirectUrl.toString());
             }
         }
         catch (error) {
-            console.error('Paystack callback error:', error);
+            this.logger.error('Paystack callback error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Verification failed';
+            return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent(errorMessage)}`);
+        }
+    }
+    async monoCallback(reference, res) {
+        var _a;
+        try {
+            if (!reference) {
+                this.logger.error('Mono callback: No transaction reference provided');
+                return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference provided')}`);
+            }
+            this.logger.log(`Mono callback: Processing payment for reference: ${reference}`);
+            const verificationResult = await this.paymentsService.verifyPayment(reference, 'Mono');
+            this.logger.log(`Mono callback: Verification result - ${verificationResult.status}`);
+            if (verificationResult.status === 'success') {
+                const appointmentId = ((_a = verificationResult.appointment) === null || _a === void 0 ? void 0 : _a._id) || '';
+                const meetLink = verificationResult.meetLink || '';
+                const redirectUrl = new URL(`${process.env.FRONTEND_URL}/booking/payment-callback`);
+                redirectUrl.searchParams.set('status', 'success');
+                redirectUrl.searchParams.set('reference', reference);
+                redirectUrl.searchParams.set('appointmentId', appointmentId.toString());
+                if (meetLink) {
+                    redirectUrl.searchParams.set('meetLink', encodeURIComponent(meetLink));
+                }
+                this.logger.log(`✅ Payment successful - Redirecting to: ${redirectUrl.toString()}`);
+                return res.redirect(redirectUrl.toString());
+            }
+            else {
+                const redirectUrl = new URL(`${process.env.FRONTEND_URL}/booking/payment-callback`);
+                redirectUrl.searchParams.set('status', 'failed');
+                redirectUrl.searchParams.set('reference', reference);
+                redirectUrl.searchParams.set('message', encodeURIComponent(verificationResult.message || 'Payment verification failed'));
+                this.logger.warn(`❌ Payment failed - Redirecting to: ${redirectUrl.toString()}`);
+                return res.redirect(redirectUrl.toString());
+            }
+        }
+        catch (error) {
+            this.logger.error('Mono callback error:', error);
             const errorMessage = error instanceof Error ? error.message : 'Verification failed';
             return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent(errorMessage)}`);
         }
@@ -84,6 +140,14 @@ __decorate([
     __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], PaymentsController.prototype, "paystackCallback", null);
+__decorate([
+    (0, common_1.Get)("callback/mono"),
+    __param(0, (0, common_1.Query)("reference")),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], PaymentsController.prototype, "monoCallback", null);
 __decorate([
     (0, common_1.Post)("verify"),
     (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
@@ -126,7 +190,7 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], PaymentsController.prototype, "getTransactionById", null);
-exports.PaymentsController = PaymentsController = __decorate([
+exports.PaymentsController = PaymentsController = PaymentsController_1 = __decorate([
     (0, common_1.Controller)("payments"),
     __metadata("design:paramtypes", [payments_service_1.PaymentsService])
 ], PaymentsController);

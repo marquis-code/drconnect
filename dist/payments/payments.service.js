@@ -21,21 +21,27 @@ const appointment_schema_1 = require("../schemas/appointment.schema");
 const user_schema_1 = require("../schemas/user.schema");
 const paystack_service_1 = require("../integrations/paystack.service");
 const mono_service_1 = require("../integrations/mono.service");
-const notification_service_1 = require("../notifications/notification.service");
+const appointments_service_1 = require("../appointments/appointments.service");
 let PaymentsService = class PaymentsService {
-    constructor(transactionModel, appointmentModel, userModel, paystackService, monoService, notificationService) {
+    constructor(transactionModel, appointmentModel, userModel, paystackService, monoService, appointmentsService) {
         this.transactionModel = transactionModel;
         this.appointmentModel = appointmentModel;
         this.userModel = userModel;
         this.paystackService = paystackService;
         this.monoService = monoService;
-        this.notificationService = notificationService;
+        this.appointmentsService = appointmentsService;
     }
     async initiatePayment(userId, initiatePaymentDto) {
         const { appointmentId, amount, paymentMethod, email, phone, address, customerName, bvn, redirectUrl, description } = initiatePaymentDto;
         const appointment = await this.appointmentModel.findById(appointmentId);
         if (!appointment) {
             throw new common_1.NotFoundException("Appointment not found");
+        }
+        if (appointment.userId.toString() !== userId) {
+            throw new common_1.BadRequestException("Unauthorized to pay for this appointment");
+        }
+        if (appointment.paymentStatus === "successful") {
+            throw new common_1.BadRequestException("This appointment has already been paid for");
         }
         const transactionRef = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const transaction = new this.transactionModel({
@@ -57,6 +63,7 @@ let PaymentsService = class PaymentsService {
                 metadata: {
                     appointmentId,
                     userId,
+                    customerName,
                 },
             });
         }
@@ -65,9 +72,9 @@ let PaymentsService = class PaymentsService {
                 amount,
                 type: "onetime-debit",
                 method: "account",
-                description: description || `Appointment consultation - ${transactionRef}`,
+                description: description || `Doctor Dey Consultation - ${transactionRef}`,
                 reference: transactionRef,
-                redirect_url: redirectUrl || `${process.env.APP_URL}/payments/callback`,
+                redirect_url: redirectUrl || `${process.env.FRONTEND_URL}/booking/payment-callback`,
                 customer: {
                     email,
                     phone,
@@ -88,7 +95,8 @@ let PaymentsService = class PaymentsService {
             throw new common_1.BadRequestException("Invalid payment method");
         }
         return Object.assign({ transactionId: transaction._id, transactionRef,
-            paymentMethod }, paymentData);
+            paymentMethod,
+            appointmentId }, paymentData);
     }
     async verifyPayment(transactionRef, paymentMethod) {
         const transaction = await this.transactionModel.findOne({ transactionRef });
@@ -96,12 +104,15 @@ let PaymentsService = class PaymentsService {
             throw new common_1.NotFoundException("Transaction not found");
         }
         if (transaction.paymentStatus === "successful") {
-            const appointment = await this.appointmentModel.findById(transaction.appointmentId);
+            const appointment = await this.appointmentModel
+                .findById(transaction.appointmentId)
+                .populate("userId", "name email phone");
             return {
                 status: "success",
                 message: "Payment already verified",
                 appointment,
                 transaction,
+                alreadyProcessed: true,
             };
         }
         let verificationResult;
@@ -111,20 +122,30 @@ let PaymentsService = class PaymentsService {
                 transaction.paymentStatus = "successful";
                 transaction.paystackReference = verificationResult.reference;
                 await transaction.save();
-                const appointment = await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
+                await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
                     paymentStatus: "successful",
-                    transactionId: transaction._id,
-                    status: "confirmed"
-                }, { new: true });
-                const user = await this.userModel.findById(transaction.userId);
-                if (user) {
-                    await this.notificationService.sendPaymentConfirmation(user.email, transaction);
+                    transactionReference: transactionRef,
+                    status: "booked",
+                });
+                let meetLink = null;
+                const appointment = await this.appointmentModel.findById(transaction.appointmentId);
+                if (appointment && appointment.consultationType === "virtual") {
+                    try {
+                        meetLink = await this.appointmentsService.generateMeetLinkAfterPayment(transaction.appointmentId.toString());
+                    }
+                    catch (error) {
+                        console.error("Failed to generate Meet link:", error);
+                    }
                 }
+                const updatedAppointment = await this.appointmentModel
+                    .findById(transaction.appointmentId)
+                    .populate("userId", "name email phone");
                 return {
                     status: "success",
                     message: "Payment verified successfully",
-                    appointment,
+                    appointment: updatedAppointment,
                     transaction,
+                    meetLink,
                 };
             }
             else {
@@ -132,11 +153,11 @@ let PaymentsService = class PaymentsService {
                 await transaction.save();
                 await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
                     paymentStatus: "failed",
-                    status: "cancelled"
+                    status: "canceled",
                 });
                 return {
                     status: "failed",
-                    message: "Payment verification failed",
+                    message: verificationResult.message || "Payment verification failed",
                     transaction,
                 };
             }
@@ -147,20 +168,30 @@ let PaymentsService = class PaymentsService {
                 transaction.paymentStatus = "successful";
                 transaction.monoReference = verificationResult.reference;
                 await transaction.save();
-                const appointment = await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
+                await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
                     paymentStatus: "successful",
-                    transactionId: transaction._id,
-                    status: "confirmed"
-                }, { new: true });
-                const user = await this.userModel.findById(transaction.userId);
-                if (user) {
-                    await this.notificationService.sendPaymentConfirmation(user.email, transaction);
+                    transactionReference: transactionRef,
+                    status: "booked",
+                });
+                let meetLink = null;
+                const appointment = await this.appointmentModel.findById(transaction.appointmentId);
+                if (appointment && appointment.consultationType === "virtual") {
+                    try {
+                        meetLink = await this.appointmentsService.generateMeetLinkAfterPayment(transaction.appointmentId.toString());
+                    }
+                    catch (error) {
+                        console.error("Failed to generate Meet link:", error);
+                    }
                 }
+                const updatedAppointment = await this.appointmentModel
+                    .findById(transaction.appointmentId)
+                    .populate("userId", "name email phone");
                 return {
                     status: "success",
                     message: "Payment verified successfully",
-                    appointment,
+                    appointment: updatedAppointment,
                     transaction,
+                    meetLink,
                 };
             }
             else {
@@ -168,11 +199,11 @@ let PaymentsService = class PaymentsService {
                 await transaction.save();
                 await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
                     paymentStatus: "failed",
-                    status: "cancelled"
+                    status: "canceled",
                 });
                 return {
                     status: "failed",
-                    message: "Payment verification failed",
+                    message: verificationResult.message || "Payment verification failed",
                     transaction,
                 };
             }
@@ -197,7 +228,10 @@ let PaymentsService = class PaymentsService {
         return transactions;
     }
     async getTransactionById(transactionId) {
-        const transaction = await this.transactionModel.findById(transactionId).populate("userId").populate("appointmentId");
+        const transaction = await this.transactionModel
+            .findById(transactionId)
+            .populate("userId", "name email phone")
+            .populate("appointmentId");
         if (!transaction) {
             throw new common_1.NotFoundException("Transaction not found");
         }
@@ -221,6 +255,6 @@ exports.PaymentsService = PaymentsService = __decorate([
     __param(2, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
     __metadata("design:paramtypes", [Function, Function, Function, paystack_service_1.PaystackService,
         mono_service_1.MonoService,
-        notification_service_1.NotificationService])
+        appointments_service_1.AppointmentsService])
 ], PaymentsService);
 //# sourceMappingURL=payments.service.js.map
