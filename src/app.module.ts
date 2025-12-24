@@ -23,7 +23,6 @@ import { EnquiryModule } from "./enquiry/enquiry.module";
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>("MONGODB_URI"),
-        // Remove deprecated options - they're no longer needed
         connectionFactory: (connection) => {
           connection.on('connected', () => {
             console.log('✅ MongoDB connected successfully')
