@@ -10,6 +10,7 @@ import { PaymentsModule } from "./payments/payments.module"
 import { AdminModule } from "./admin/admin.module"
 import { NotificationModule } from "./notifications/notification.module"
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { EnquiryModule } from "./enquiry/enquiry.module";
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
     PaymentsModule,
     AdminModule,
     NotificationModule,
+    EnquiryModule,
   ],
    controllers: [GoogleAuthController],
   providers: [
