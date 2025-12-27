@@ -15,6 +15,11 @@ class CreateAppointmentDto {
 }
 exports.CreateAppointmentDto = CreateAppointmentDto;
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsMongoId)(),
+    __metadata("design:type", String)
+], CreateAppointmentDto.prototype, "planId", void 0);
+__decorate([
     (0, class_validator_1.IsEnum)(["physical", "virtual"]),
     __metadata("design:type", String)
 ], CreateAppointmentDto.prototype, "consultationType", void 0);
@@ -39,4 +44,8 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", Number)
 ], CreateAppointmentDto.prototype, "price", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateAppointmentDto.prototype, "duration", void 0);
 //# sourceMappingURL=create-appointment.dto.js.map

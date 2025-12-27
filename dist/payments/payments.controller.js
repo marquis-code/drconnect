@@ -15,14 +15,16 @@ var PaymentsController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentsController = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const payments_service_1 = require("./payments.service");
 const initiate_payment_dto_1 = require("./dto/initiate-payment.dto");
 const jwt_guard_1 = require("../auth/guards/jwt.guard");
 const admin_guard_1 = require("../auth/guards/admin.guard");
 const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
 let PaymentsController = PaymentsController_1 = class PaymentsController {
-    constructor(paymentsService) {
+    constructor(paymentsService, configService) {
         this.paymentsService = paymentsService;
+        this.configService = configService;
         this.logger = new common_1.Logger(PaymentsController_1.name);
     }
     async initiatePayment(initiatePaymentDto, user) {
@@ -31,10 +33,11 @@ let PaymentsController = PaymentsController_1 = class PaymentsController {
     async paystackCallback(reference, trxref, res) {
         var _a;
         try {
+            const frontendUrl = this.configService.get("FRONTEND_URL");
             const transactionRef = reference || trxref;
             if (!transactionRef) {
                 this.logger.error('Paystack callback: No transaction reference provided');
-                return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference provided')}`);
+                return res.redirect(`${frontendUrl}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference provided')}`);
             }
             this.logger.log(`Paystack callback: Processing payment for reference: ${transactionRef}`);
             const verificationResult = await this.paymentsService.verifyPayment(transactionRef, 'Paystack');
@@ -42,7 +45,7 @@ let PaymentsController = PaymentsController_1 = class PaymentsController {
             if (verificationResult.status === 'success') {
                 const appointmentId = ((_a = verificationResult.appointment) === null || _a === void 0 ? void 0 : _a._id) || '';
                 const meetLink = verificationResult.meetLink || '';
-                const redirectUrl = new URL(`${process.env.FRONTEND_URL}/booking/payment-callback`);
+                const redirectUrl = new URL(`${frontendUrl}/booking/payment-callback`);
                 redirectUrl.searchParams.set('status', 'success');
                 redirectUrl.searchParams.set('reference', transactionRef);
                 redirectUrl.searchParams.set('appointmentId', appointmentId.toString());
@@ -53,7 +56,7 @@ let PaymentsController = PaymentsController_1 = class PaymentsController {
                 return res.redirect(redirectUrl.toString());
             }
             else {
-                const redirectUrl = new URL(`${process.env.FRONTEND_URL}/booking/payment-callback`);
+                const redirectUrl = new URL(`${frontendUrl}/booking/payment-callback`);
                 redirectUrl.searchParams.set('status', 'failed');
                 redirectUrl.searchParams.set('reference', transactionRef);
                 redirectUrl.searchParams.set('message', encodeURIComponent(verificationResult.message || 'Payment verification failed'));
@@ -62,17 +65,19 @@ let PaymentsController = PaymentsController_1 = class PaymentsController {
             }
         }
         catch (error) {
+            const frontendUrl = this.configService.get("FRONTEND_URL");
             this.logger.error('Paystack callback error:', error);
             const errorMessage = error instanceof Error ? error.message : 'Verification failed';
-            return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent(errorMessage)}`);
+            return res.redirect(`${frontendUrl}/booking/payment-callback?status=error&message=${encodeURIComponent(errorMessage)}`);
         }
     }
     async monoCallback(reference, res) {
         var _a;
         try {
+            const frontendUrl = this.configService.get("FRONTEND_URL");
             if (!reference) {
                 this.logger.error('Mono callback: No transaction reference provided');
-                return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference provided')}`);
+                return res.redirect(`${frontendUrl}/booking/payment-callback?status=error&message=${encodeURIComponent('No transaction reference provided')}`);
             }
             this.logger.log(`Mono callback: Processing payment for reference: ${reference}`);
             const verificationResult = await this.paymentsService.verifyPayment(reference, 'Mono');
@@ -80,7 +85,7 @@ let PaymentsController = PaymentsController_1 = class PaymentsController {
             if (verificationResult.status === 'success') {
                 const appointmentId = ((_a = verificationResult.appointment) === null || _a === void 0 ? void 0 : _a._id) || '';
                 const meetLink = verificationResult.meetLink || '';
-                const redirectUrl = new URL(`${process.env.FRONTEND_URL}/booking/payment-callback`);
+                const redirectUrl = new URL(`${frontendUrl}/booking/payment-callback`);
                 redirectUrl.searchParams.set('status', 'success');
                 redirectUrl.searchParams.set('reference', reference);
                 redirectUrl.searchParams.set('appointmentId', appointmentId.toString());
@@ -91,7 +96,7 @@ let PaymentsController = PaymentsController_1 = class PaymentsController {
                 return res.redirect(redirectUrl.toString());
             }
             else {
-                const redirectUrl = new URL(`${process.env.FRONTEND_URL}/booking/payment-callback`);
+                const redirectUrl = new URL(`${frontendUrl}/booking/payment-callback`);
                 redirectUrl.searchParams.set('status', 'failed');
                 redirectUrl.searchParams.set('reference', reference);
                 redirectUrl.searchParams.set('message', encodeURIComponent(verificationResult.message || 'Payment verification failed'));
@@ -100,9 +105,10 @@ let PaymentsController = PaymentsController_1 = class PaymentsController {
             }
         }
         catch (error) {
+            const frontendUrl = this.configService.get("FRONTEND_URL");
             this.logger.error('Mono callback error:', error);
             const errorMessage = error instanceof Error ? error.message : 'Verification failed';
-            return res.redirect(`${process.env.FRONTEND_URL}/booking/payment-callback?status=error&message=${encodeURIComponent(errorMessage)}`);
+            return res.redirect(`${frontendUrl}/booking/payment-callback?status=error&message=${encodeURIComponent(errorMessage)}`);
         }
     }
     async verifyPayment(reference, method) {
@@ -192,6 +198,7 @@ __decorate([
 ], PaymentsController.prototype, "getTransactionById", null);
 exports.PaymentsController = PaymentsController = PaymentsController_1 = __decorate([
     (0, common_1.Controller)("payments"),
-    __metadata("design:paramtypes", [payments_service_1.PaymentsService])
+    __metadata("design:paramtypes", [payments_service_1.PaymentsService,
+        config_1.ConfigService])
 ], PaymentsController);
 //# sourceMappingURL=payments.controller.js.map

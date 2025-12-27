@@ -63,6 +63,10 @@ __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
 ], Appointment.prototype, "googleMeetLink", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: mongoose_2.Types.ObjectId, ref: "ConsultationPlan", required: false }),
+    __metadata("design:type", mongoose_2.Types.ObjectId)
+], Appointment.prototype, "planId", void 0);
 exports.Appointment = Appointment = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Appointment);

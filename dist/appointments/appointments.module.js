@@ -14,6 +14,7 @@ const appointments_controller_1 = require("./appointments.controller");
 const appointment_schema_1 = require("../schemas/appointment.schema");
 const notification_module_1 = require("../notifications/notification.module");
 const google_meet_module_1 = require("../integrations/google-meet.module");
+const consultation_plans_module_1 = require("../consultation-plans/consultation-plans.module");
 let AppointmentsModule = class AppointmentsModule {
 };
 exports.AppointmentsModule = AppointmentsModule;
@@ -23,6 +24,7 @@ exports.AppointmentsModule = AppointmentsModule = __decorate([
             mongoose_1.MongooseModule.forFeature([{ name: appointment_schema_1.Appointment.name, schema: appointment_schema_1.AppointmentSchema }]),
             notification_module_1.NotificationModule,
             google_meet_module_1.GoogleMeetModule,
+            consultation_plans_module_1.ConsultationPlansModule,
         ],
         providers: [appointments_service_1.AppointmentsService],
         controllers: [appointments_controller_1.AppointmentsController],

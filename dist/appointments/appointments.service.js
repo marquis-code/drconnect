@@ -17,26 +17,43 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const appointment_schema_1 = require("../schemas/appointment.schema");
+const consultation_plans_service_1 = require("../consultation-plans/consultation-plans.service");
 const google_meet_service_1 = require("../integrations/google-meet.service");
 let AppointmentsService = class AppointmentsService {
-    constructor(appointmentModel, googleMeetService) {
+    constructor(appointmentModel, googleMeetService, consultationPlansService) {
         this.appointmentModel = appointmentModel;
         this.googleMeetService = googleMeetService;
+        this.consultationPlansService = consultationPlansService;
     }
     async createAppointment(userId, createAppointmentDto) {
-        const { consultationType, consultationMode, date, timeSlot, location, price } = createAppointmentDto;
+        const { planId, consultationType, consultationMode, date, timeSlot, location, price, duration } = createAppointmentDto;
+        if (planId) {
+            const plan = await this.consultationPlansService.getPlanById(planId);
+            const isAvailable = await this.consultationPlansService.isPlanAvailableForDateTime(planId, new Date(date), timeSlot);
+            if (!isAvailable) {
+                throw new common_1.BadRequestException("This consultation plan is not available for the selected date and time");
+            }
+            if (plan.consultationType !== consultationType) {
+                throw new common_1.BadRequestException(`Consultation type must be ${plan.consultationType} for this plan`);
+            }
+            if (consultationMode && !plan.consultationModes.includes(consultationMode)) {
+                throw new common_1.BadRequestException(`Consultation mode ${consultationMode} is not available for this plan`);
+            }
+        }
         const isSlotAvailable = await this.checkSlotAvailability(date, timeSlot, consultationType);
         if (!isSlotAvailable) {
             throw new common_1.BadRequestException(`This time slot is no longer available for ${consultationType} consultation. Please choose another time.`);
         }
         const appointment = new this.appointmentModel({
             userId: new mongoose_2.Types.ObjectId(userId),
+            planId: planId ? new mongoose_2.Types.ObjectId(planId) : undefined,
             consultationType,
             consultationMode: consultationMode || "video",
             date: new Date(date),
             timeSlot,
             location,
             price,
+            duration: duration || 30,
             paymentStatus: "pending",
             status: "booked",
         });
@@ -157,6 +174,7 @@ exports.AppointmentsService = AppointmentsService;
 exports.AppointmentsService = AppointmentsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(appointment_schema_1.Appointment.name)),
-    __metadata("design:paramtypes", [Function, google_meet_service_1.GoogleMeetService])
+    __metadata("design:paramtypes", [Function, google_meet_service_1.GoogleMeetService,
+        consultation_plans_service_1.ConsultationPlansService])
 ], AppointmentsService);
 //# sourceMappingURL=appointments.service.js.map

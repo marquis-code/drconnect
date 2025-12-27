@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentsService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
+const config_1 = require("@nestjs/config");
 const mongoose_2 = require("mongoose");
 const transaction_schema_1 = require("../schemas/transaction.schema");
 const appointment_schema_1 = require("../schemas/appointment.schema");
@@ -23,13 +24,14 @@ const paystack_service_1 = require("../integrations/paystack.service");
 const mono_service_1 = require("../integrations/mono.service");
 const appointments_service_1 = require("../appointments/appointments.service");
 let PaymentsService = class PaymentsService {
-    constructor(transactionModel, appointmentModel, userModel, paystackService, monoService, appointmentsService) {
+    constructor(transactionModel, appointmentModel, userModel, paystackService, monoService, appointmentsService, configService) {
         this.transactionModel = transactionModel;
         this.appointmentModel = appointmentModel;
         this.userModel = userModel;
         this.paystackService = paystackService;
         this.monoService = monoService;
         this.appointmentsService = appointmentsService;
+        this.configService = configService;
     }
     async initiatePayment(userId, initiatePaymentDto) {
         const { appointmentId, amount, paymentMethod, email, phone, address, customerName, bvn, redirectUrl, description } = initiatePaymentDto;
@@ -55,11 +57,12 @@ let PaymentsService = class PaymentsService {
         await transaction.save();
         let paymentData;
         if (paymentMethod === "Paystack") {
+            const apiUrl = this.configService.get("API_URL");
             paymentData = await this.paystackService.initializePayment({
                 email,
                 amount: amount * 100,
                 reference: transactionRef,
-                callback_url: `${process.env.API_URL}/payments/callback/paystack`,
+                callback_url: `${apiUrl}/payments/callback/paystack`,
                 metadata: {
                     appointmentId,
                     userId,
@@ -68,13 +71,14 @@ let PaymentsService = class PaymentsService {
             });
         }
         else if (paymentMethod === "Mono") {
+            const frontendUrl = this.configService.get("FRONTEND_URL");
             paymentData = await this.monoService.initializePayment({
                 amount,
                 type: "onetime-debit",
                 method: "account",
                 description: description || `Doctor Dey Consultation - ${transactionRef}`,
                 reference: transactionRef,
-                redirect_url: redirectUrl || `${process.env.FRONTEND_URL}/booking/payment-callback`,
+                redirect_url: redirectUrl || `${frontendUrl}/booking/payment-callback`,
                 customer: {
                     email,
                     phone,
@@ -255,6 +259,7 @@ exports.PaymentsService = PaymentsService = __decorate([
     __param(2, (0, mongoose_1.InjectModel)(user_schema_1.User.name)),
     __metadata("design:paramtypes", [Function, Function, Function, paystack_service_1.PaystackService,
         mono_service_1.MonoService,
-        appointments_service_1.AppointmentsService])
+        appointments_service_1.AppointmentsService,
+        config_1.ConfigService])
 ], PaymentsService);
 //# sourceMappingURL=payments.service.js.map

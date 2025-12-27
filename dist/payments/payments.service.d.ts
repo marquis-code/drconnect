@@ -1,3 +1,4 @@
+import { ConfigService } from "@nestjs/config";
 import { type Model } from "mongoose";
 import { Transaction } from "src/schemas/transaction.schema";
 import { Appointment } from "src/schemas/appointment.schema";
@@ -13,7 +14,8 @@ export declare class PaymentsService {
     private paystackService;
     private monoService;
     private appointmentsService;
-    constructor(transactionModel: Model<Transaction>, appointmentModel: Model<Appointment>, userModel: Model<User>, paystackService: PaystackService, monoService: MonoService, appointmentsService: AppointmentsService);
+    private configService;
+    constructor(transactionModel: Model<Transaction>, appointmentModel: Model<Appointment>, userModel: Model<User>, paystackService: PaystackService, monoService: MonoService, appointmentsService: AppointmentsService, configService: ConfigService);
     initiatePayment(userId: string, initiatePaymentDto: InitiatePaymentDto): Promise<any>;
     verifyPayment(transactionRef: string, paymentMethod: string): Promise<{
         status: string;

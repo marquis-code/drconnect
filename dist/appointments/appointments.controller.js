@@ -31,13 +31,13 @@ let AppointmentsController = class AppointmentsController {
     async getAppointmentById(id) {
         return this.appointmentsService.getAppointmentById(id);
     }
-    async cancelAppointment(id, body, req) {
+    async cancelAppointment(id, body) {
         return this.appointmentsService.cancelAppointment(id, body.reason);
     }
-    async rescheduleAppointment(id, rescheduleDto, req) {
+    async rescheduleAppointment(id, rescheduleDto) {
         return this.appointmentsService.rescheduleAppointment(id, rescheduleDto);
     }
-    async completeAppointment(id, req) {
+    async completeAppointment(id) {
         return this.appointmentsService.completeAppointment(id);
     }
 };
@@ -68,26 +68,23 @@ __decorate([
     (0, common_1.Put)(":id/cancel"),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
-    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AppointmentsController.prototype, "cancelAppointment", null);
 __decorate([
     (0, common_1.Put)(":id/reschedule"),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
-    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, reschedule_appointment_dto_1.RescheduleAppointmentDto, Object]),
+    __metadata("design:paramtypes", [String, reschedule_appointment_dto_1.RescheduleAppointmentDto]),
     __metadata("design:returntype", Promise)
 ], AppointmentsController.prototype, "rescheduleAppointment", null);
 __decorate([
     (0, common_1.Put)(":id/complete"),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AppointmentsController.prototype, "completeAppointment", null);
 exports.AppointmentsController = AppointmentsController = __decorate([

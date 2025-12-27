@@ -1,12 +1,14 @@
 import { type Model } from "mongoose";
 import { Appointment } from "src/schemas/appointment.schema";
+import { ConsultationPlansService } from "../consultation-plans/consultation-plans.service";
 import { CreateAppointmentDto } from "./dto/create-appointment.dto";
 import { RescheduleAppointmentDto } from "./dto/reschedule-appointment.dto";
 import { GoogleMeetService } from "src/integrations/google-meet.service";
 export declare class AppointmentsService {
     private appointmentModel;
     private googleMeetService;
-    constructor(appointmentModel: Model<Appointment>, googleMeetService: GoogleMeetService);
+    private consultationPlansService;
+    constructor(appointmentModel: Model<Appointment>, googleMeetService: GoogleMeetService, consultationPlansService: ConsultationPlansService);
     createAppointment(userId: string, createAppointmentDto: CreateAppointmentDto): Promise<import("mongoose").Document<unknown, {}, Appointment, {}, {}> & Appointment & Required<{
         _id: unknown;
     }> & {

@@ -22,17 +22,17 @@ export declare class AppointmentsController {
     }>;
     cancelAppointment(id: string, body: {
         reason: string;
-    }, req: Request): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
+    }): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
         _id: unknown;
     }> & {
         __v: number;
     }>;
-    rescheduleAppointment(id: string, rescheduleDto: RescheduleAppointmentDto, req: Request): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
+    rescheduleAppointment(id: string, rescheduleDto: RescheduleAppointmentDto): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
         _id: unknown;
     }> & {
         __v: number;
     }>;
-    completeAppointment(id: string, req: Request): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
+    completeAppointment(id: string): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
         _id: unknown;
     }> & {
         __v: number;

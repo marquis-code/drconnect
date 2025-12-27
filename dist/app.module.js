@@ -19,6 +19,7 @@ const payments_module_1 = require("./payments/payments.module");
 const admin_module_1 = require("./admin/admin.module");
 const notification_module_1 = require("./notifications/notification.module");
 const throttler_2 = require("@nestjs/throttler");
+const enquiry_module_1 = require("./enquiry/enquiry.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -61,6 +62,7 @@ exports.AppModule = AppModule = __decorate([
             payments_module_1.PaymentsModule,
             admin_module_1.AdminModule,
             notification_module_1.NotificationModule,
+            enquiry_module_1.EnquiryModule,
         ],
         controllers: [google_controller_1.GoogleAuthController],
         providers: [

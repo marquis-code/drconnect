@@ -1,10 +1,12 @@
 import { Response } from "express";
+import { ConfigService } from "@nestjs/config";
 import { PaymentsService } from "./payments.service";
 import { InitiatePaymentDto } from "./dto/initiate-payment.dto";
 export declare class PaymentsController {
     private paymentsService;
+    private configService;
     private readonly logger;
-    constructor(paymentsService: PaymentsService);
+    constructor(paymentsService: PaymentsService, configService: ConfigService);
     initiatePayment(initiatePaymentDto: InitiatePaymentDto, user: any): Promise<any>;
     paystackCallback(reference: string, trxref: string, res: Response): Promise<void>;
     monoCallback(reference: string, res: Response): Promise<void>;

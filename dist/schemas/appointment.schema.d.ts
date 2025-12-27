@@ -12,6 +12,7 @@ export declare class Appointment extends Document {
     status: string;
     cancellationReason: string;
     googleMeetLink: string;
+    planId: Types.ObjectId;
 }
 export declare const AppointmentSchema: import("mongoose").Schema<Appointment, import("mongoose").Model<Appointment, any, any, any, Document<unknown, any, Appointment, any, {}> & Appointment & Required<{
     _id: unknown;
