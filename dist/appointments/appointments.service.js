@@ -26,55 +26,106 @@ let AppointmentsService = class AppointmentsService {
         this.consultationPlansService = consultationPlansService;
     }
     async createAppointment(userId, createAppointmentDto) {
-        const { planId, consultationType, consultationMode, date, timeSlot, location, price, duration } = createAppointmentDto;
-        if (planId) {
-            const plan = await this.consultationPlansService.getPlanById(planId);
-            const isAvailable = await this.consultationPlansService.isPlanAvailableForDateTime(planId, new Date(date), timeSlot);
-            if (!isAvailable) {
-                throw new common_1.BadRequestException("This consultation plan is not available for the selected date and time");
-            }
-            if (plan.consultationType !== consultationType) {
-                throw new common_1.BadRequestException(`Consultation type must be ${plan.consultationType} for this plan`);
-            }
-            if (consultationMode && !plan.consultationModes.includes(consultationMode)) {
-                throw new common_1.BadRequestException(`Consultation mode ${consultationMode} is not available for this plan`);
+        const { planId, doctorId, consultationType, consultationCategory, consultationMode, date, timeSlot, location, price, duration, patientNotes, chiefComplaint, symptoms, previousAppointmentId } = createAppointmentDto;
+        const plan = await this.consultationPlansService.getPlanById(planId);
+        const isAvailable = await this.consultationPlansService.isPlanAvailableForDateTime(planId, new Date(date), timeSlot);
+        if (!isAvailable) {
+            throw new common_1.BadRequestException("This consultation plan is not available for the selected date and time");
+        }
+        if (plan.consultationType !== consultationType) {
+            throw new common_1.BadRequestException(`Consultation type must be ${plan.consultationType} for this plan`);
+        }
+        if (plan.consultationCategory !== consultationCategory) {
+            throw new common_1.BadRequestException(`Consultation category must be ${plan.consultationCategory} for this plan`);
+        }
+        if (!plan.consultationModes.includes(consultationMode)) {
+            throw new common_1.BadRequestException(`Consultation mode ${consultationMode} is not available for this plan`);
+        }
+        if (plan.isNewPatientOnly) {
+            const existingAppointments = await this.appointmentModel.countDocuments({
+                userId: new mongoose_2.Types.ObjectId(userId),
+                status: { $in: [appointment_schema_1.AppointmentStatus.COMPLETED] }
+            });
+            if (existingAppointments > 0) {
+                throw new common_1.BadRequestException("This plan is only available for new patients");
             }
         }
-        const isSlotAvailable = await this.checkSlotAvailability(date, timeSlot, consultationType);
+        if (plan.isExistingPatientOnly) {
+            const existingAppointments = await this.appointmentModel.countDocuments({
+                userId: new mongoose_2.Types.ObjectId(userId),
+                status: { $in: [appointment_schema_1.AppointmentStatus.COMPLETED] }
+            });
+            if (existingAppointments === 0) {
+                throw new common_1.BadRequestException("This plan is only available for existing patients");
+            }
+        }
+        const appointmentDate = new Date(date);
+        const now = new Date();
+        const hoursDifference = (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+        if (hoursDifference < plan.minAdvanceBookingHours) {
+            throw new common_1.BadRequestException(`This appointment must be booked at least ${plan.minAdvanceBookingHours} hours in advance`);
+        }
+        if (hoursDifference > plan.maxAdvanceBookingHours) {
+            throw new common_1.BadRequestException(`This appointment cannot be booked more than ${plan.maxAdvanceBookingHours} hours in advance`);
+        }
+        const isSlotAvailable = await this.checkSlotAvailability(date, timeSlot, consultationType, doctorId);
         if (!isSlotAvailable) {
-            throw new common_1.BadRequestException(`This time slot is no longer available for ${consultationType} consultation. Please choose another time.`);
+            throw new common_1.BadRequestException(`This time slot is no longer available. Please choose another time.`);
         }
         const appointment = new this.appointmentModel({
             userId: new mongoose_2.Types.ObjectId(userId),
-            planId: planId ? new mongoose_2.Types.ObjectId(planId) : undefined,
+            doctorId: doctorId ? new mongoose_2.Types.ObjectId(doctorId) : undefined,
+            planId: new mongoose_2.Types.ObjectId(planId),
             consultationType,
-            consultationMode: consultationMode || "video",
+            consultationCategory,
+            consultationMode,
             date: new Date(date),
             timeSlot,
+            duration,
             location,
             price,
-            duration: duration || 30,
-            paymentStatus: "pending",
-            status: "booked",
+            patientNotes,
+            chiefComplaint,
+            symptoms,
+            previousAppointmentId: previousAppointmentId ? new mongoose_2.Types.ObjectId(previousAppointmentId) : undefined,
+            paymentStatus: appointment_schema_1.PaymentStatus.PENDING,
+            status: appointment_schema_1.AppointmentStatus.BOOKED,
+            scheduledStartTime: this.calculateScheduledStartTime(date, timeSlot)
         });
         await appointment.save();
+        if (previousAppointmentId) {
+            await this.appointmentModel.findByIdAndUpdate(previousAppointmentId, { nextAppointmentId: appointment._id });
+        }
         return appointment;
     }
-    async checkSlotAvailability(date, timeSlot, consultationType) {
+    calculateScheduledStartTime(date, timeSlot) {
+        const [startTime] = timeSlot.split('-');
+        const [hours, minutes] = startTime.split(':').map(Number);
+        const scheduledDate = new Date(date);
+        scheduledDate.setHours(hours, minutes, 0, 0);
+        return scheduledDate;
+    }
+    async checkSlotAvailability(date, timeSlot, consultationType, doctorId) {
         const targetDate = new Date(date);
         const startOfDay = new Date(targetDate);
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(targetDate);
         endOfDay.setHours(23, 59, 59, 999);
-        const existingAppointment = await this.appointmentModel.findOne({
+        const query = {
             date: {
                 $gte: startOfDay,
                 $lte: endOfDay,
             },
             timeSlot,
             consultationType,
-            status: { $nin: ["canceled", "completed"] },
-        });
+            status: {
+                $nin: [appointment_schema_1.AppointmentStatus.CANCELED, appointment_schema_1.AppointmentStatus.NO_SHOW]
+            },
+        };
+        if (doctorId) {
+            query.doctorId = new mongoose_2.Types.ObjectId(doctorId);
+        }
+        const existingAppointment = await this.appointmentModel.findOne(query);
         return !existingAppointment;
     }
     async generateMeetLinkAfterPayment(appointmentId) {
@@ -82,10 +133,10 @@ let AppointmentsService = class AppointmentsService {
         if (!appointment) {
             throw new common_1.NotFoundException("Appointment not found");
         }
-        if (appointment.paymentStatus !== "successful") {
+        if (appointment.paymentStatus !== appointment_schema_1.PaymentStatus.SUCCESSFUL) {
             throw new common_1.BadRequestException("Payment must be successful before generating Meet link");
         }
-        if (appointment.consultationType !== "virtual") {
+        if (appointment.consultationCategory !== "virtual") {
             throw new common_1.BadRequestException("Google Meet link is only for virtual consultations");
         }
         try {
@@ -100,50 +151,162 @@ let AppointmentsService = class AppointmentsService {
             throw new common_1.BadRequestException("Failed to generate Google Meet link");
         }
     }
-    async getAppointments(userId, role) {
+    async getAppointments(userId, role, queryDto) {
         const query = {};
-        if (role === "user") {
+        if (role === "user" || role === "patient") {
             query.userId = new mongoose_2.Types.ObjectId(userId);
         }
-        const appointments = await this.appointmentModel.find(query).populate("userId", "name email phone");
+        else if (role === "doctor") {
+            query.doctorId = new mongoose_2.Types.ObjectId(userId);
+        }
+        if (queryDto.status) {
+            query.status = queryDto.status;
+        }
+        if (queryDto.consultationType) {
+            query.consultationType = queryDto.consultationType;
+        }
+        if (queryDto.paymentStatus) {
+            query.paymentStatus = queryDto.paymentStatus;
+        }
+        if (queryDto.dateFrom || queryDto.dateTo) {
+            query.date = {};
+            if (queryDto.dateFrom) {
+                query.date.$gte = new Date(queryDto.dateFrom);
+            }
+            if (queryDto.dateTo) {
+                query.date.$lte = new Date(queryDto.dateTo);
+            }
+        }
+        if (queryDto.searchTerm) {
+            query.$or = [
+                { patientNotes: { $regex: queryDto.searchTerm, $options: 'i' } },
+                { chiefComplaint: { $regex: queryDto.searchTerm, $options: 'i' } },
+                { diagnosis: { $regex: queryDto.searchTerm, $options: 'i' } }
+            ];
+        }
+        const appointments = await this.appointmentModel
+            .find(query)
+            .populate("userId", "name email phone")
+            .populate("doctorId", "name email specialization")
+            .populate("planId", "name consultationType duration price")
+            .sort({ date: -1, scheduledStartTime: -1 });
         return appointments;
     }
-    async getAppointmentById(appointmentId) {
-        const appointment = await this.appointmentModel.findById(appointmentId).populate("userId", "name email phone");
+    async getUserUpcomingAppointments(userId) {
+        const now = new Date();
+        return this.appointmentModel
+            .find({
+            userId: new mongoose_2.Types.ObjectId(userId),
+            date: { $gte: now },
+            status: {
+                $in: [appointment_schema_1.AppointmentStatus.BOOKED, appointment_schema_1.AppointmentStatus.CONFIRMED]
+            }
+        })
+            .populate("doctorId", "name email specialization")
+            .populate("planId", "name consultationType duration")
+            .sort({ date: 1, scheduledStartTime: 1 });
+    }
+    async getUserPastAppointments(userId) {
+        const now = new Date();
+        return this.appointmentModel
+            .find({
+            userId: new mongoose_2.Types.ObjectId(userId),
+            $or: [
+                { date: { $lt: now } },
+                { status: { $in: [appointment_schema_1.AppointmentStatus.COMPLETED, appointment_schema_1.AppointmentStatus.CANCELED] } }
+            ]
+        })
+            .populate("doctorId", "name email specialization")
+            .populate("planId", "name consultationType duration")
+            .sort({ date: -1, scheduledStartTime: -1 });
+    }
+    async getAppointmentById(appointmentId, userId, role) {
+        const appointment = await this.appointmentModel
+            .findById(appointmentId)
+            .populate("userId", "name email phone")
+            .populate("doctorId", "name email specialization")
+            .populate("planId")
+            .populate("previousAppointmentId")
+            .populate("nextAppointmentId");
         if (!appointment) {
             throw new common_1.NotFoundException("Appointment not found");
         }
+        if (role === "user" || role === "patient") {
+            if (appointment.userId._id.toString() !== userId) {
+                throw new common_1.ForbiddenException("You can only view your own appointments");
+            }
+        }
+        else if (role === "doctor") {
+            if (appointment.doctorId && appointment.doctorId._id.toString() !== userId) {
+                throw new common_1.ForbiddenException("You can only view your assigned appointments");
+            }
+        }
         return appointment;
     }
-    async cancelAppointment(appointmentId, cancellationReason) {
+    async updateAppointment(appointmentId, updateDto, userId, role) {
         const appointment = await this.appointmentModel.findById(appointmentId);
         if (!appointment) {
             throw new common_1.NotFoundException("Appointment not found");
         }
-        if (appointment.status === "canceled") {
-            throw new common_1.BadRequestException("Appointment is already canceled");
+        if (role === "doctor") {
+            if (!appointment.doctorId || appointment.doctorId.toString() !== userId) {
+                throw new common_1.ForbiddenException("You can only update your assigned appointments");
+            }
         }
-        appointment.status = "canceled";
-        appointment.cancellationReason = cancellationReason;
+        Object.assign(appointment, updateDto);
         await appointment.save();
         return appointment;
     }
-    async rescheduleAppointment(appointmentId, rescheduleDto) {
+    async cancelAppointment(appointmentId, cancellationReason, canceledBy, userId, role) {
+        const appointment = await this.appointmentModel.findById(appointmentId);
+        if (!appointment) {
+            throw new common_1.NotFoundException("Appointment not found");
+        }
+        if (appointment.status === appointment_schema_1.AppointmentStatus.CANCELED) {
+            throw new common_1.BadRequestException("Appointment is already canceled");
+        }
+        if (appointment.status === appointment_schema_1.AppointmentStatus.COMPLETED) {
+            throw new common_1.BadRequestException("Cannot cancel a completed appointment");
+        }
+        if (role === "user" || role === "patient") {
+            if (appointment.userId.toString() !== userId) {
+                throw new common_1.ForbiddenException("You can only cancel your own appointments");
+            }
+        }
+        appointment.status = appointment_schema_1.AppointmentStatus.CANCELED;
+        appointment.cancellationReason = cancellationReason;
+        appointment.canceledBy = canceledBy;
+        appointment.canceledAt = new Date();
+        await appointment.save();
+        return appointment;
+    }
+    async rescheduleAppointment(appointmentId, rescheduleDto, userId, role) {
+        var _a;
         const { newDate, newTimeSlot } = rescheduleDto;
         const appointment = await this.appointmentModel.findById(appointmentId);
         if (!appointment) {
             throw new common_1.NotFoundException("Appointment not found");
         }
-        if (appointment.status === "canceled") {
+        if (appointment.status === appointment_schema_1.AppointmentStatus.CANCELED) {
             throw new common_1.BadRequestException("Cannot reschedule a canceled appointment");
         }
-        const isNewSlotAvailable = await this.checkSlotAvailability(newDate, newTimeSlot, appointment.consultationType);
+        if (appointment.status === appointment_schema_1.AppointmentStatus.COMPLETED) {
+            throw new common_1.BadRequestException("Cannot reschedule a completed appointment");
+        }
+        if (role === "user" || role === "patient") {
+            if (appointment.userId.toString() !== userId) {
+                throw new common_1.ForbiddenException("You can only reschedule your own appointments");
+            }
+        }
+        const isNewSlotAvailable = await this.checkSlotAvailability(newDate, newTimeSlot, appointment.consultationType, (_a = appointment.doctorId) === null || _a === void 0 ? void 0 : _a.toString());
         if (!isNewSlotAvailable) {
             throw new common_1.BadRequestException("The new time slot is not available. Please choose another time.");
         }
         appointment.date = new Date(newDate);
         appointment.timeSlot = newTimeSlot;
-        if (appointment.consultationType === "virtual" && appointment.googleMeetLink) {
+        appointment.scheduledStartTime = this.calculateScheduledStartTime(newDate, newTimeSlot);
+        appointment.status = appointment_schema_1.AppointmentStatus.RESCHEDULED;
+        if (appointment.consultationCategory === "virtual" && appointment.googleMeetLink) {
             try {
                 const meetLink = await this.googleMeetService.generateMeetLink(newDate, newTimeSlot);
                 appointment.googleMeetLink = meetLink;
@@ -155,18 +318,131 @@ let AppointmentsService = class AppointmentsService {
         await appointment.save();
         return appointment;
     }
-    async completeAppointment(appointmentId) {
-        const appointment = await this.appointmentModel.findByIdAndUpdate(appointmentId, { status: "completed" }, { new: true });
+    async completeAppointment(appointmentId, completeDto, doctorId) {
+        const appointment = await this.appointmentModel.findById(appointmentId);
         if (!appointment) {
             throw new common_1.NotFoundException("Appointment not found");
         }
+        if (!appointment.doctorId || appointment.doctorId.toString() !== doctorId) {
+            throw new common_1.ForbiddenException("You can only complete your assigned appointments");
+        }
+        appointment.status = appointment_schema_1.AppointmentStatus.COMPLETED;
+        appointment.doctorNotes = completeDto.doctorNotes;
+        appointment.diagnosis = completeDto.diagnosis;
+        appointment.prescription = completeDto.prescription;
+        appointment.attachments = completeDto.attachments || [];
+        appointment.followUpRequired = completeDto.followUpRequired;
+        appointment.followUpDate = completeDto.followUpDate ? new Date(completeDto.followUpDate) : undefined;
+        appointment.actualEndTime = new Date();
+        await appointment.save();
         return appointment;
+    }
+    async checkInAppointment(appointmentId, userId) {
+        const appointment = await this.appointmentModel.findById(appointmentId);
+        if (!appointment) {
+            throw new common_1.NotFoundException("Appointment not found");
+        }
+        if (appointment.userId.toString() !== userId) {
+            throw new common_1.ForbiddenException("You can only check in to your own appointments");
+        }
+        appointment.checkedInAt = new Date();
+        await appointment.save();
+        return appointment;
+    }
+    async startAppointment(appointmentId, doctorId) {
+        const appointment = await this.appointmentModel.findById(appointmentId);
+        if (!appointment) {
+            throw new common_1.NotFoundException("Appointment not found");
+        }
+        if (!appointment.doctorId || appointment.doctorId.toString() !== doctorId) {
+            throw new common_1.ForbiddenException("You can only start your assigned appointments");
+        }
+        appointment.status = appointment_schema_1.AppointmentStatus.IN_PROGRESS;
+        appointment.actualStartTime = new Date();
+        await appointment.save();
+        return appointment;
+    }
+    async confirmAppointment(appointmentId) {
+        const appointment = await this.appointmentModel.findById(appointmentId);
+        if (!appointment) {
+            throw new common_1.NotFoundException("Appointment not found");
+        }
+        appointment.status = appointment_schema_1.AppointmentStatus.CONFIRMED;
+        await appointment.save();
+        return appointment;
+    }
+    async rateAppointment(appointmentId, rating, feedback, userId, role) {
+        const appointment = await this.appointmentModel.findById(appointmentId);
+        if (!appointment) {
+            throw new common_1.NotFoundException("Appointment not found");
+        }
+        if (appointment.status !== appointment_schema_1.AppointmentStatus.COMPLETED) {
+            throw new common_1.BadRequestException("Can only rate completed appointments");
+        }
+        if (role === "user" || role === "patient") {
+            if (appointment.userId.toString() !== userId) {
+                throw new common_1.ForbiddenException("You can only rate your own appointments");
+            }
+            appointment.patientRating = rating;
+            appointment.patientFeedback = feedback;
+        }
+        else if (role === "doctor") {
+            if (!appointment.doctorId || appointment.doctorId.toString() !== userId) {
+                throw new common_1.ForbiddenException("You can only rate your assigned appointments");
+            }
+            appointment.doctorRating = rating;
+            appointment.doctorFeedback = feedback;
+        }
+        await appointment.save();
+        return appointment;
+    }
+    async getMeetLink(appointmentId, userId, role) {
+        const appointment = await this.appointmentModel.findById(appointmentId);
+        if (!appointment) {
+            throw new common_1.NotFoundException("Appointment not found");
+        }
+        if (role === "user" || role === "patient") {
+            if (appointment.userId.toString() !== userId) {
+                throw new common_1.ForbiddenException("Access denied");
+            }
+        }
+        else if (role === "doctor") {
+            if (!appointment.doctorId || appointment.doctorId.toString() !== userId) {
+                throw new common_1.ForbiddenException("Access denied");
+            }
+        }
+        if (!appointment.googleMeetLink) {
+            throw new common_1.NotFoundException("Meet link not generated yet");
+        }
+        return { meetLink: appointment.googleMeetLink };
+    }
+    async getAppointmentStatistics(userId, role) {
+        const query = {};
+        if (role === "user" || role === "patient") {
+            query.userId = new mongoose_2.Types.ObjectId(userId);
+        }
+        else if (role === "doctor") {
+            query.doctorId = new mongoose_2.Types.ObjectId(userId);
+        }
+        const [total, completed, canceled, upcoming] = await Promise.all([
+            this.appointmentModel.countDocuments(query),
+            this.appointmentModel.countDocuments(Object.assign(Object.assign({}, query), { status: appointment_schema_1.AppointmentStatus.COMPLETED })),
+            this.appointmentModel.countDocuments(Object.assign(Object.assign({}, query), { status: appointment_schema_1.AppointmentStatus.CANCELED })),
+            this.appointmentModel.countDocuments(Object.assign(Object.assign({}, query), { date: { $gte: new Date() }, status: { $in: [appointment_schema_1.AppointmentStatus.BOOKED, appointment_schema_1.AppointmentStatus.CONFIRMED] } }))
+        ]);
+        return {
+            total,
+            completed,
+            canceled,
+            upcoming,
+            completionRate: total > 0 ? ((completed / total) * 100).toFixed(2) : 0
+        };
     }
     async getUpcomingAppointments() {
         const now = new Date();
         return this.appointmentModel.find({
             date: { $gte: now },
-            status: "booked",
+            status: { $in: [appointment_schema_1.AppointmentStatus.BOOKED, appointment_schema_1.AppointmentStatus.CONFIRMED] },
         });
     }
 };

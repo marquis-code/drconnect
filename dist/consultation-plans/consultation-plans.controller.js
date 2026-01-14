@@ -19,6 +19,7 @@ const create_consultation_plan_dto_1 = require("./dto/create-consultation-plan.d
 const update_consultation_plan_dto_1 = require("./dto/update-consultation-plan.dto");
 const jwt_guard_1 = require("../auth/guards/jwt.guard");
 const admin_guard_1 = require("../auth/guards/admin.guard");
+const consultation_plan_schema_1 = require("../schemas/consultation-plan.schema");
 let ConsultationPlansController = class ConsultationPlansController {
     constructor(consultationPlansService) {
         this.consultationPlansService = consultationPlansService;
@@ -26,11 +27,29 @@ let ConsultationPlansController = class ConsultationPlansController {
     async createPlan(createPlanDto) {
         return this.consultationPlansService.createPlan(createPlanDto);
     }
-    async getAllPlans(includeInactive) {
-        return this.consultationPlansService.getAllPlans(includeInactive || false);
+    async getAllPlans(includeInactive, consultationType, consultationCategory, minPrice, maxPrice) {
+        return this.consultationPlansService.getAllPlans({
+            includeInactive: includeInactive || false,
+            consultationType,
+            consultationCategory,
+            minPrice,
+            maxPrice
+        });
     }
-    async getAvailablePlansForDate(date) {
-        return this.consultationPlansService.getAvailablePlansForDate(new Date(date));
+    async getAvailablePlansForDate(date, consultationType, consultationCategory) {
+        return this.consultationPlansService.getAvailablePlansForDate(new Date(date), consultationType, consultationCategory);
+    }
+    async getPlansByType(consultationType) {
+        return this.consultationPlansService.getPlansByType(consultationType);
+    }
+    async getPlansByCategory(consultationCategory) {
+        return this.consultationPlansService.getPlansByCategory(consultationCategory);
+    }
+    async getPlansForNewPatients() {
+        return this.consultationPlansService.getPlansForNewPatients();
+    }
+    async getPlansForExistingPatients() {
+        return this.consultationPlansService.getPlansForExistingPatients();
     }
     async getPlanById(id) {
         return this.consultationPlansService.getPlanById(id);
@@ -41,15 +60,18 @@ let ConsultationPlansController = class ConsultationPlansController {
     async togglePlanStatus(id) {
         return this.consultationPlansService.togglePlanStatus(id);
     }
+    async reorderPlans(orderData) {
+        return this.consultationPlansService.reorderPlans(orderData);
+    }
     async deletePlan(id) {
         await this.consultationPlansService.deletePlan(id);
-        return { message: "Consultation plan deleted successfully" };
     }
 };
 exports.ConsultationPlansController = ConsultationPlansController;
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_consultation_plan_dto_1.CreateConsultationPlanDto]),
@@ -58,17 +80,49 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)("includeInactive", new common_1.ParseBoolPipe({ optional: true }))),
+    __param(1, (0, common_1.Query)("consultationType")),
+    __param(2, (0, common_1.Query)("consultationCategory")),
+    __param(3, (0, common_1.Query)("minPrice")),
+    __param(4, (0, common_1.Query)("maxPrice")),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Boolean]),
+    __metadata("design:paramtypes", [Boolean, String, String, Number, Number]),
     __metadata("design:returntype", Promise)
 ], ConsultationPlansController.prototype, "getAllPlans", null);
 __decorate([
     (0, common_1.Get)("available/:date"),
     __param(0, (0, common_1.Param)("date")),
+    __param(1, (0, common_1.Query)("consultationType")),
+    __param(2, (0, common_1.Query)("consultationCategory")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", Promise)
+], ConsultationPlansController.prototype, "getAvailablePlansForDate", null);
+__decorate([
+    (0, common_1.Get)("type/:consultationType"),
+    __param(0, (0, common_1.Param)("consultationType")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], ConsultationPlansController.prototype, "getAvailablePlansForDate", null);
+], ConsultationPlansController.prototype, "getPlansByType", null);
+__decorate([
+    (0, common_1.Get)("category/:consultationCategory"),
+    __param(0, (0, common_1.Param)("consultationCategory")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ConsultationPlansController.prototype, "getPlansByCategory", null);
+__decorate([
+    (0, common_1.Get)("new-patients"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], ConsultationPlansController.prototype, "getPlansForNewPatients", null);
+__decorate([
+    (0, common_1.Get)("existing-patients"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], ConsultationPlansController.prototype, "getPlansForExistingPatients", null);
 __decorate([
     (0, common_1.Get)(":id"),
     __param(0, (0, common_1.Param)("id")),
@@ -94,8 +148,17 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ConsultationPlansController.prototype, "togglePlanStatus", null);
 __decorate([
+    (0, common_1.Put)("bulk/reorder"),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Array]),
+    __metadata("design:returntype", Promise)
+], ConsultationPlansController.prototype, "reorderPlans", null);
+__decorate([
     (0, common_1.Delete)(":id"),
     (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
+    (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
     __param(0, (0, common_1.Param)("id")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

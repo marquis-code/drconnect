@@ -15,12 +15,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PublicController = void 0;
 const common_1 = require("@nestjs/common");
 const admin_service_1 = require("./admin.service");
+const availability_schema_1 = require("../schemas/availability.schema");
 let PublicController = class PublicController {
     constructor(adminService) {
         this.adminService = adminService;
     }
-    async getAvailabilityByDate(date, time, consultationType) {
-        return this.adminService.getAvailabilityByDate(date, time, consultationType);
+    async getAvailabilityByDate(date, time, consultationCategory, doctorId) {
+        let validatedCategory;
+        if (consultationCategory) {
+            const upperCategory = consultationCategory.toUpperCase();
+            if (!Object.values(availability_schema_1.ConsultationCategory).includes(consultationCategory)) {
+                throw new common_1.BadRequestException(`Invalid consultation category. Must be one of: ${Object.values(availability_schema_1.ConsultationCategory).join(", ")}`);
+            }
+            validatedCategory = consultationCategory;
+        }
+        return this.adminService.getAvailabilityByDate(date, time, validatedCategory, doctorId);
     }
     async getSettings() {
         return this.adminService.getSettings();
@@ -29,11 +38,12 @@ let PublicController = class PublicController {
 exports.PublicController = PublicController;
 __decorate([
     (0, common_1.Get)("availability/by-date"),
-    __param(0, (0, common_1.Query)('date')),
-    __param(1, (0, common_1.Query)('time')),
-    __param(2, (0, common_1.Query)('consultationType')),
+    __param(0, (0, common_1.Query)("date")),
+    __param(1, (0, common_1.Query)("time")),
+    __param(2, (0, common_1.Query)("consultationCategory")),
+    __param(3, (0, common_1.Query)("doctorId")),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], PublicController.prototype, "getAvailabilityByDate", null);
 __decorate([

@@ -22,12 +22,46 @@ let ConsultationPlansService = class ConsultationPlansService {
         this.consultationPlanModel = consultationPlanModel;
     }
     async createPlan(createPlanDto) {
+        if (createPlanDto.isNewPatientOnly && createPlanDto.isExistingPatientOnly) {
+            throw new common_1.BadRequestException("Plan cannot be for both new and existing patients only");
+        }
+        if (createPlanDto.availableTimeRange) {
+            this.validateTimeRange(createPlanDto.availableTimeRange);
+        }
+        const existingPlan = await this.consultationPlanModel.findOne({
+            name: createPlanDto.name
+        });
+        if (existingPlan) {
+            throw new common_1.ConflictException("A consultation plan with this name already exists");
+        }
         const plan = new this.consultationPlanModel(createPlanDto);
         return plan.save();
     }
-    async getAllPlans(includeInactive = false) {
-        const query = includeInactive ? {} : { isActive: true };
-        return this.consultationPlanModel.find(query).sort({ sortOrder: 1, createdAt: 1 });
+    async getAllPlans(options = {}) {
+        const { includeInactive = false, consultationType, consultationCategory, minPrice, maxPrice } = options;
+        const query = {};
+        if (!includeInactive) {
+            query.isActive = true;
+        }
+        if (consultationType) {
+            query.consultationType = consultationType;
+        }
+        if (consultationCategory) {
+            query.consultationCategory = consultationCategory;
+        }
+        if (minPrice !== undefined || maxPrice !== undefined) {
+            query.price = {};
+            if (minPrice !== undefined) {
+                query.price.$gte = minPrice;
+            }
+            if (maxPrice !== undefined) {
+                query.price.$lte = maxPrice;
+            }
+        }
+        return this.consultationPlanModel
+            .find(query)
+            .sort({ sortOrder: 1, createdAt: 1 })
+            .exec();
     }
     async getPlanById(planId) {
         const plan = await this.consultationPlanModel.findById(planId);
@@ -36,8 +70,59 @@ let ConsultationPlansService = class ConsultationPlansService {
         }
         return plan;
     }
+    async getPlansByType(consultationType) {
+        return this.consultationPlanModel
+            .find({ consultationType, isActive: true })
+            .sort({ sortOrder: 1, price: 1 })
+            .exec();
+    }
+    async getPlansByCategory(consultationCategory) {
+        return this.consultationPlanModel
+            .find({ consultationCategory, isActive: true })
+            .sort({ sortOrder: 1, price: 1 })
+            .exec();
+    }
+    async getPlansForNewPatients() {
+        return this.consultationPlanModel
+            .find({
+            isActive: true,
+            $or: [
+                { isNewPatientOnly: true },
+                { isNewPatientOnly: false, isExistingPatientOnly: false }
+            ]
+        })
+            .sort({ sortOrder: 1 })
+            .exec();
+    }
+    async getPlansForExistingPatients() {
+        return this.consultationPlanModel
+            .find({
+            isActive: true,
+            $or: [
+                { isExistingPatientOnly: true },
+                { isNewPatientOnly: false, isExistingPatientOnly: false }
+            ]
+        })
+            .sort({ sortOrder: 1 })
+            .exec();
+    }
     async updatePlan(planId, updatePlanDto) {
-        const plan = await this.consultationPlanModel.findByIdAndUpdate(planId, updatePlanDto, { new: true });
+        if (updatePlanDto.isNewPatientOnly && updatePlanDto.isExistingPatientOnly) {
+            throw new common_1.BadRequestException("Plan cannot be for both new and existing patients only");
+        }
+        if (updatePlanDto.availableTimeRange) {
+            this.validateTimeRange(updatePlanDto.availableTimeRange);
+        }
+        if (updatePlanDto.name) {
+            const existingPlan = await this.consultationPlanModel.findOne({
+                name: updatePlanDto.name,
+                _id: { $ne: planId }
+            });
+            if (existingPlan) {
+                throw new common_1.ConflictException("A consultation plan with this name already exists");
+            }
+        }
+        const plan = await this.consultationPlanModel.findByIdAndUpdate(planId, updatePlanDto, { new: true, runValidators: true });
         if (!plan) {
             throw new common_1.NotFoundException("Consultation plan not found");
         }
@@ -57,14 +142,25 @@ let ConsultationPlansService = class ConsultationPlansService {
         plan.isActive = !plan.isActive;
         return plan.save();
     }
+    async reorderPlans(orderData) {
+        const bulkOps = orderData.map(item => ({
+            updateOne: {
+                filter: { _id: item.planId },
+                update: { sortOrder: item.sortOrder }
+            }
+        }));
+        await this.consultationPlanModel.bulkWrite(bulkOps);
+    }
     async isPlanAvailableForDateTime(planId, date, timeSlot) {
         const plan = await this.getPlanById(planId);
         if (!plan.isActive) {
             return false;
         }
         const dayOfWeek = date.getDay();
-        if (!plan.availableDays.includes(dayOfWeek)) {
-            return false;
+        if (plan.availableDays && plan.availableDays.length > 0) {
+            if (!plan.availableDays.includes(dayOfWeek)) {
+                return false;
+            }
         }
         if (plan.availableTimeRange) {
             const [startTime, endTime] = plan.availableTimeRange.split("-");
@@ -73,14 +169,66 @@ let ConsultationPlansService = class ConsultationPlansService {
                 return false;
             }
         }
+        const now = new Date();
+        const hoursDifference = (date.getTime() - now.getTime()) / (1000 * 60 * 60);
+        if (plan.minAdvanceBookingHours && hoursDifference < plan.minAdvanceBookingHours) {
+            return false;
+        }
+        if (plan.maxAdvanceBookingHours && hoursDifference > plan.maxAdvanceBookingHours) {
+            return false;
+        }
         return true;
     }
-    async getAvailablePlansForDate(date) {
+    async getAvailablePlansForDate(date, consultationType, consultationCategory) {
         const dayOfWeek = date.getDay();
-        return this.consultationPlanModel.find({
+        const query = {
             isActive: true,
-            availableDays: dayOfWeek
-        }).sort({ sortOrder: 1 });
+            $or: [
+                { availableDays: dayOfWeek },
+                { availableDays: { $size: 0 } }
+            ]
+        };
+        if (consultationType) {
+            query.consultationType = consultationType;
+        }
+        if (consultationCategory) {
+            query.consultationCategory = consultationCategory;
+        }
+        const plans = await this.consultationPlanModel
+            .find(query)
+            .sort({ sortOrder: 1 })
+            .exec();
+        const now = new Date();
+        return plans.filter(plan => {
+            const hoursDifference = (date.getTime() - now.getTime()) / (1000 * 60 * 60);
+            if (plan.minAdvanceBookingHours && hoursDifference < plan.minAdvanceBookingHours) {
+                return false;
+            }
+            if (plan.maxAdvanceBookingHours && hoursDifference > plan.maxAdvanceBookingHours) {
+                return false;
+            }
+            return true;
+        });
+    }
+    validateTimeRange(timeRange) {
+        const timeRangeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (!timeRangeRegex.test(timeRange)) {
+            throw new common_1.BadRequestException("Invalid time range format. Use HH:MM-HH:MM format");
+        }
+        const [startTime, endTime] = timeRange.split("-");
+        if (startTime >= endTime) {
+            throw new common_1.BadRequestException("Start time must be before end time");
+        }
+    }
+    async isPatientEligibleForPlan(planId, isNewPatient) {
+        const plan = await this.getPlanById(planId);
+        if (plan.isNewPatientOnly && !isNewPatient) {
+            return false;
+        }
+        if (plan.isExistingPatientOnly && isNewPatient) {
+            return false;
+        }
+        return true;
     }
 };
 exports.ConsultationPlansService = ConsultationPlansService;

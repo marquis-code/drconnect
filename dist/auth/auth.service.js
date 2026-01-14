@@ -44,6 +44,17 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
@@ -60,10 +71,15 @@ let AuthService = class AuthService {
         this.notificationService = notificationService;
     }
     async register(registerDto) {
-        const { email, password, name, phone, role } = registerDto;
+        const { email, password, name, phone, role, specialization, licenseNumber, qualification, bio } = registerDto;
         const existingUser = await this.userModel.findOne({ email });
         if (existingUser) {
             throw new common_1.ConflictException("Email already registered");
+        }
+        if (role === user_schema_1.UserRole.DOCTOR) {
+            if (!specialization || !licenseNumber) {
+                throw new common_1.BadRequestException("Specialization and license number are required for doctor registration");
+            }
         }
         const verificationToken = crypto.randomBytes(32).toString("hex");
         const user = new this.userModel({
@@ -72,13 +88,25 @@ let AuthService = class AuthService {
             phone,
             password,
             verificationToken,
-            authProvider: "email",
-            role: role !== null && role !== void 0 ? role : "user",
+            authProvider: user_schema_1.AuthProvider.EMAIL,
+            role: role !== null && role !== void 0 ? role : user_schema_1.UserRole.PATIENT,
+            specialization,
+            licenseNumber,
+            qualification,
+            bio,
+            emailVerified: false,
         });
         await user.save();
+        try {
+            await this.notificationService.sendVerificationEmail(email, verificationToken);
+        }
+        catch (error) {
+            console.error("Failed to send verification email:", error);
+        }
         return {
             message: "Registration successful. Please verify your email.",
             userId: user._id,
+            role: user.role,
         };
     }
     async login(loginDto) {
@@ -106,21 +134,33 @@ let AuthService = class AuthService {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                specialization: user.specialization,
+                profilePicture: user.profilePicture,
             },
         };
     }
     async googleLogin(profile) {
         let user = await this.userModel.findOne({ googleId: profile.googleId });
         if (!user) {
-            user = new this.userModel({
-                name: `${profile.firstName} ${profile.lastName}`,
-                email: profile.email,
-                phone: "",
-                googleId: profile.googleId,
-                authProvider: "google",
-                emailVerified: true,
-                profilePicture: profile.picture,
-            });
+            user = await this.userModel.findOne({ email: profile.email });
+            if (user) {
+                user.googleId = profile.googleId;
+                user.authProvider = user_schema_1.AuthProvider.GOOGLE;
+                user.profilePicture = profile.picture;
+                user.emailVerified = true;
+            }
+            else {
+                user = new this.userModel({
+                    name: `${profile.firstName} ${profile.lastName}`,
+                    email: profile.email,
+                    phone: "",
+                    googleId: profile.googleId,
+                    authProvider: user_schema_1.AuthProvider.GOOGLE,
+                    emailVerified: true,
+                    profilePicture: profile.picture,
+                    role: user_schema_1.UserRole.PATIENT,
+                });
+            }
             await user.save();
         }
         const token = this.jwtService.sign({
@@ -135,6 +175,8 @@ let AuthService = class AuthService {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                specialization: user.specialization,
+                profilePicture: user.profilePicture,
             },
         };
     }
@@ -146,20 +188,42 @@ let AuthService = class AuthService {
         user.emailVerified = true;
         user.verificationToken = null;
         await user.save();
-        return { message: "Email verified successfully" };
+        return {
+            message: "Email verified successfully",
+            userId: user._id
+        };
+    }
+    async resendVerificationEmail(email) {
+        const user = await this.userModel.findOne({ email });
+        if (!user) {
+            throw new common_1.BadRequestException("User not found");
+        }
+        if (user.emailVerified) {
+            throw new common_1.BadRequestException("Email is already verified");
+        }
+        const verificationToken = crypto.randomBytes(32).toString("hex");
+        user.verificationToken = verificationToken;
+        await user.save();
+        await this.notificationService.sendVerificationEmail(email, verificationToken);
+        return { message: "Verification email sent" };
     }
     async forgotPassword(forgotPasswordDto) {
         const { email } = forgotPasswordDto;
         const user = await this.userModel.findOne({ email });
         if (!user) {
-            throw new common_1.BadRequestException("User not found");
+            return { message: "If that email exists, a password reset link has been sent" };
         }
         const resetToken = crypto.randomBytes(32).toString("hex");
         user.resetToken = resetToken;
         user.resetTokenExpiry = new Date(Date.now() + 3600000);
         await user.save();
-        await this.notificationService.sendPasswordResetEmail(email, resetToken);
-        return { message: "Password reset email sent" };
+        try {
+            await this.notificationService.sendPasswordResetEmail(email, resetToken);
+        }
+        catch (error) {
+            console.error("Failed to send password reset email:", error);
+        }
+        return { message: "If that email exists, a password reset link has been sent" };
     }
     async resetPassword(resetPasswordDto) {
         const { token, newPassword } = resetPasswordDto;
@@ -177,15 +241,72 @@ let AuthService = class AuthService {
         return { message: "Password reset successfully" };
     }
     async getProfile(userId) {
-        const user = await this.userModel.findById(userId).select("-password -resetToken");
+        const user = await this.userModel
+            .findById(userId)
+            .select("-password -resetToken -resetTokenExpiry -verificationToken");
         if (!user) {
             throw new common_1.BadRequestException("User not found");
         }
         return user;
     }
     async updateProfile(userId, updateData) {
-        const user = await this.userModel.findByIdAndUpdate(userId, updateData, { new: true });
+        const { email } = updateData, safeUpdateData = __rest(updateData, ["email"]);
+        if (email) {
+            const existingUser = await this.userModel.findOne({
+                email,
+                _id: { $ne: userId }
+            });
+            if (existingUser) {
+                throw new common_1.ConflictException("Email already in use");
+            }
+            const verificationToken = crypto.randomBytes(32).toString("hex");
+            safeUpdateData['emailVerified'] = false;
+            safeUpdateData['verificationToken'] = verificationToken;
+            safeUpdateData['email'] = email;
+            try {
+                await this.notificationService.sendVerificationEmail(email, verificationToken);
+            }
+            catch (error) {
+                console.error("Failed to send verification email:", error);
+            }
+        }
+        const user = await this.userModel.findByIdAndUpdate(userId, safeUpdateData, { new: true }).select("-password -resetToken -resetTokenExpiry -verificationToken");
+        if (!user) {
+            throw new common_1.BadRequestException("User not found");
+        }
         return user;
+    }
+    async getAllDoctors() {
+        return this.userModel
+            .find({ role: "doctor" })
+            .select("-password -resetToken -resetTokenExpiry -verificationToken")
+            .sort({ name: 1 });
+    }
+    async getDoctorById(doctorId) {
+        const doctor = await this.userModel
+            .findOne({ _id: doctorId, role: "doctor" })
+            .select("-password -resetToken -resetTokenExpiry -verificationToken");
+        if (!doctor) {
+            throw new common_1.BadRequestException("Doctor not found");
+        }
+        return doctor;
+    }
+    async searchDoctors(query, specialization) {
+        const filter = { role: "doctor" };
+        if (query) {
+            filter.$or = [
+                { name: { $regex: query, $options: "i" } },
+                { specialization: { $regex: query, $options: "i" } },
+                { bio: { $regex: query, $options: "i" } }
+            ];
+        }
+        if (specialization) {
+            filter.specialization = { $regex: specialization, $options: "i" };
+        }
+        return this.userModel
+            .find(filter)
+            .select("-password -resetToken -resetTokenExpiry -verificationToken")
+            .sort({ name: 1 });
     }
 };
 exports.AuthService = AuthService;

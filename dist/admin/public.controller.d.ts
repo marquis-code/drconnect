@@ -1,19 +1,22 @@
 import { AdminService } from "./admin.service";
+import { ConsultationCategory } from "src/schemas/availability.schema";
 export declare class PublicController {
     private adminService;
     constructor(adminService: AdminService);
-    getAvailabilityByDate(date?: string, time?: string, consultationType?: string): Promise<{
+    getAvailabilityByDate(date?: string, time?: string, consultationCategory?: string, doctorId?: string): Promise<{
         date: string;
         dayOfWeek: number;
         time: string;
         availability: ({
-            consultationType: string;
+            consultationCategory: ConsultationCategory;
+            doctorId: import("mongoose").Types.ObjectId;
             isAvailable: boolean;
             reason: string;
             time?: undefined;
             timeSlot?: undefined;
         } | {
-            consultationType: string;
+            consultationCategory: ConsultationCategory;
+            doctorId: import("mongoose").Types.ObjectId;
             time: string;
             timeSlot: {
                 startTime: string;
@@ -28,8 +31,15 @@ export declare class PublicController {
         availability: {
             _id: unknown;
             dayOfWeek: number;
-            consultationType: string;
+            consultationCategory: ConsultationCategory;
+            doctorId: import("mongoose").Types.ObjectId;
             isAvailable: boolean;
+            allowedConsultationTypes: import("src/schemas/availability.schema").ConsultationType[];
+            allowedConsultationModes: import("src/schemas/availability.schema").ConsultationMode[];
+            location: string;
+            maxConcurrentAppointments: number;
+            slotDuration: number;
+            bufferTime: number;
             timeSlots: {
                 startTime: string;
                 endTime: string;

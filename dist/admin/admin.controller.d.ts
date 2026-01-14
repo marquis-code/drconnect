@@ -1,19 +1,34 @@
 import { AdminService } from "./admin.service";
+import { AppointmentStatus } from "src/schemas/appointment.schema";
+import { ConsultationCategory } from "src/schemas/availability.schema";
+import { UserRole } from "src/schemas/user.schema";
 export declare class AdminController {
     private adminService;
     constructor(adminService: AdminService);
     getDashboardStats(): Promise<{
-        totalUsers: number;
+        totalPatients: number;
+        totalDoctors: number;
         totalAppointments: number;
         completedAppointments: number;
+        pendingAppointments: number;
         totalRevenue: any;
     }>;
-    getAllUsers(): Promise<(import("mongoose").Document<unknown, {}, import("../schemas/user.schema").User, {}, {}> & import("../schemas/user.schema").User & Required<{
+    getAllUsers(role?: UserRole): Promise<(import("mongoose").Document<unknown, {}, import("src/schemas/user.schema").User, {}, {}> & import("src/schemas/user.schema").User & Required<{
         _id: unknown;
     }> & {
         __v: number;
     })[]>;
-    getAllAppointments(status?: string): Promise<(import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
+    getAllDoctors(): Promise<(import("mongoose").Document<unknown, {}, import("src/schemas/user.schema").User, {}, {}> & import("src/schemas/user.schema").User & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
+    })[]>;
+    verifyDoctor(doctorId: string, user: any): Promise<import("mongoose").Document<unknown, {}, import("src/schemas/user.schema").User, {}, {}> & import("src/schemas/user.schema").User & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
+    }>;
+    getAllAppointments(status?: AppointmentStatus): Promise<(import("mongoose").Document<unknown, {}, import("src/schemas/appointment.schema").Appointment, {}, {}> & import("src/schemas/appointment.schema").Appointment & Required<{
         _id: unknown;
     }> & {
         __v: number;
@@ -23,28 +38,30 @@ export declare class AdminController {
     }> & {
         __v: number;
     })[]>;
-    setAvailability(availabilityData: any): Promise<import("mongoose").Document<unknown, {}, import("../schemas/availability.schema").Availability, {}, {}> & import("../schemas/availability.schema").Availability & Required<{
+    setAvailability(availabilityData: any): Promise<import("mongoose").Document<unknown, {}, import("src/schemas/availability.schema").Availability, {}, {}> & import("src/schemas/availability.schema").Availability & Required<{
         _id: unknown;
     }> & {
         __v: number;
     }>;
-    getAvailability(): Promise<(import("mongoose").Document<unknown, {}, import("../schemas/availability.schema").Availability, {}, {}> & import("../schemas/availability.schema").Availability & Required<{
+    getAvailability(doctorId?: string): Promise<(import("mongoose").Document<unknown, {}, import("src/schemas/availability.schema").Availability, {}, {}> & import("src/schemas/availability.schema").Availability & Required<{
         _id: unknown;
     }> & {
         __v: number;
     })[]>;
-    getAvailabilityByDate(date?: string, time?: string, consultationType?: string): Promise<{
+    getAvailabilityByDate(date?: string, time?: string, consultationCategory?: ConsultationCategory, doctorId?: string): Promise<{
         date: string;
         dayOfWeek: number;
         time: string;
         availability: ({
-            consultationType: string;
+            consultationCategory: ConsultationCategory;
+            doctorId: import("mongoose").Types.ObjectId;
             isAvailable: boolean;
             reason: string;
             time?: undefined;
             timeSlot?: undefined;
         } | {
-            consultationType: string;
+            consultationCategory: ConsultationCategory;
+            doctorId: import("mongoose").Types.ObjectId;
             time: string;
             timeSlot: {
                 startTime: string;
@@ -59,8 +76,15 @@ export declare class AdminController {
         availability: {
             _id: unknown;
             dayOfWeek: number;
-            consultationType: string;
+            consultationCategory: ConsultationCategory;
+            doctorId: import("mongoose").Types.ObjectId;
             isAvailable: boolean;
+            allowedConsultationTypes: import("src/schemas/availability.schema").ConsultationType[];
+            allowedConsultationModes: import("src/schemas/availability.schema").ConsultationMode[];
+            location: string;
+            maxConcurrentAppointments: number;
+            slotDuration: number;
+            bufferTime: number;
             timeSlots: {
                 startTime: string;
                 endTime: string;
@@ -84,7 +108,7 @@ export declare class AdminController {
     }> & {
         __v: number;
     })[]>;
-    exportAppointments(): Promise<(import("mongoose").FlattenMaps<import("../schemas/appointment.schema").Appointment> & Required<{
+    exportAppointments(): Promise<(import("mongoose").FlattenMaps<import("src/schemas/appointment.schema").Appointment> & Required<{
         _id: import("mongoose").FlattenMaps<unknown>;
     }> & {
         __v: number;

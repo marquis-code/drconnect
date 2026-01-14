@@ -42,7 +42,7 @@ let PaymentsService = class PaymentsService {
         if (appointment.userId.toString() !== userId) {
             throw new common_1.BadRequestException("Unauthorized to pay for this appointment");
         }
-        if (appointment.paymentStatus === "successful") {
+        if (appointment.paymentStatus === appointment_schema_1.PaymentStatus.SUCCESSFUL) {
             throw new common_1.BadRequestException("This appointment has already been paid for");
         }
         const transactionRef = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -110,7 +110,9 @@ let PaymentsService = class PaymentsService {
         if (transaction.paymentStatus === "successful") {
             const appointment = await this.appointmentModel
                 .findById(transaction.appointmentId)
-                .populate("userId", "name email phone");
+                .populate("userId", "name email phone")
+                .populate("doctorId", "name email specialization")
+                .populate("planId", "name consultationType duration price");
             return {
                 status: "success",
                 message: "Payment already verified",
@@ -127,13 +129,14 @@ let PaymentsService = class PaymentsService {
                 transaction.paystackReference = verificationResult.reference;
                 await transaction.save();
                 await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
-                    paymentStatus: "successful",
+                    paymentStatus: appointment_schema_1.PaymentStatus.SUCCESSFUL,
+                    paymentMethod: "Paystack",
                     transactionReference: transactionRef,
-                    status: "booked",
+                    status: appointment_schema_1.AppointmentStatus.CONFIRMED,
                 });
                 let meetLink = null;
                 const appointment = await this.appointmentModel.findById(transaction.appointmentId);
-                if (appointment && appointment.consultationType === "virtual") {
+                if (appointment && appointment.consultationCategory === "virtual") {
                     try {
                         meetLink = await this.appointmentsService.generateMeetLinkAfterPayment(transaction.appointmentId.toString());
                     }
@@ -143,7 +146,9 @@ let PaymentsService = class PaymentsService {
                 }
                 const updatedAppointment = await this.appointmentModel
                     .findById(transaction.appointmentId)
-                    .populate("userId", "name email phone");
+                    .populate("userId", "name email phone")
+                    .populate("doctorId", "name email specialization")
+                    .populate("planId", "name consultationType duration price");
                 return {
                     status: "success",
                     message: "Payment verified successfully",
@@ -156,8 +161,8 @@ let PaymentsService = class PaymentsService {
                 transaction.paymentStatus = "failed";
                 await transaction.save();
                 await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
-                    paymentStatus: "failed",
-                    status: "canceled",
+                    paymentStatus: appointment_schema_1.PaymentStatus.FAILED,
+                    status: appointment_schema_1.AppointmentStatus.CANCELED,
                 });
                 return {
                     status: "failed",
@@ -173,13 +178,14 @@ let PaymentsService = class PaymentsService {
                 transaction.monoReference = verificationResult.reference;
                 await transaction.save();
                 await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
-                    paymentStatus: "successful",
+                    paymentStatus: appointment_schema_1.PaymentStatus.SUCCESSFUL,
+                    paymentMethod: "Mono",
                     transactionReference: transactionRef,
-                    status: "booked",
+                    status: appointment_schema_1.AppointmentStatus.CONFIRMED,
                 });
                 let meetLink = null;
                 const appointment = await this.appointmentModel.findById(transaction.appointmentId);
-                if (appointment && appointment.consultationType === "virtual") {
+                if (appointment && appointment.consultationCategory === "virtual") {
                     try {
                         meetLink = await this.appointmentsService.generateMeetLinkAfterPayment(transaction.appointmentId.toString());
                     }
@@ -189,7 +195,9 @@ let PaymentsService = class PaymentsService {
                 }
                 const updatedAppointment = await this.appointmentModel
                     .findById(transaction.appointmentId)
-                    .populate("userId", "name email phone");
+                    .populate("userId", "name email phone")
+                    .populate("doctorId", "name email specialization")
+                    .populate("planId", "name consultationType duration price");
                 return {
                     status: "success",
                     message: "Payment verified successfully",
@@ -202,8 +210,8 @@ let PaymentsService = class PaymentsService {
                 transaction.paymentStatus = "failed";
                 await transaction.save();
                 await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
-                    paymentStatus: "failed",
-                    status: "canceled",
+                    paymentStatus: appointment_schema_1.PaymentStatus.FAILED,
+                    status: appointment_schema_1.AppointmentStatus.CANCELED,
                 });
                 return {
                     status: "failed",
@@ -219,7 +227,13 @@ let PaymentsService = class PaymentsService {
     async getTransactionHistory(userId) {
         const transactions = await this.transactionModel
             .find({ userId: new mongoose_2.Types.ObjectId(userId) })
-            .populate("appointmentId")
+            .populate({
+            path: "appointmentId",
+            populate: [
+                { path: "doctorId", select: "name email specialization" },
+                { path: "planId", select: "name consultationType duration price" }
+            ]
+        })
             .sort({ createdAt: -1 });
         return transactions;
     }
@@ -227,7 +241,13 @@ let PaymentsService = class PaymentsService {
         const transactions = await this.transactionModel
             .find()
             .populate("userId", "name email")
-            .populate("appointmentId")
+            .populate({
+            path: "appointmentId",
+            populate: [
+                { path: "doctorId", select: "name email specialization" },
+                { path: "planId", select: "name consultationType duration price" }
+            ]
+        })
             .sort({ createdAt: -1 });
         return transactions;
     }
@@ -235,7 +255,13 @@ let PaymentsService = class PaymentsService {
         const transaction = await this.transactionModel
             .findById(transactionId)
             .populate("userId", "name email phone")
-            .populate("appointmentId");
+            .populate({
+            path: "appointmentId",
+            populate: [
+                { path: "doctorId", select: "name email specialization" },
+                { path: "planId", select: "name consultationType duration price" }
+            ]
+        });
         if (!transaction) {
             throw new common_1.NotFoundException("Transaction not found");
         }

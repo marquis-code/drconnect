@@ -1,10 +1,11 @@
 import { JwtService } from "@nestjs/jwt";
 import { Model } from "mongoose";
-import { User } from "src/schemas/user.schema";
+import { User, UserRole } from "../schemas/user.schema";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { NotificationService } from "../notifications/notification.service";
 export declare class AuthService {
     private userModel;
@@ -14,6 +15,7 @@ export declare class AuthService {
     register(registerDto: RegisterDto): Promise<{
         message: string;
         userId: unknown;
+        role: UserRole;
     }>;
     login(loginDto: LoginDto): Promise<{
         access_token: string;
@@ -21,7 +23,9 @@ export declare class AuthService {
             id: unknown;
             name: string;
             email: string;
-            role: string;
+            role: UserRole;
+            specialization: string;
+            profilePicture: string;
         };
     }>;
     googleLogin(profile: any): Promise<{
@@ -30,10 +34,16 @@ export declare class AuthService {
             id: unknown;
             name: string;
             email: string;
-            role: string;
+            role: UserRole;
+            specialization: string;
+            profilePicture: string;
         };
     }>;
     verifyEmail(token: string): Promise<{
+        message: string;
+        userId: unknown;
+    }>;
+    resendVerificationEmail(email: string): Promise<{
         message: string;
     }>;
     forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{
@@ -47,9 +57,24 @@ export declare class AuthService {
     }> & {
         __v: number;
     }>;
-    updateProfile(userId: string, updateData: any): Promise<import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
+    updateProfile(userId: string, updateData: UpdateProfileDto): Promise<import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
         _id: unknown;
     }> & {
         __v: number;
     }>;
+    getAllDoctors(): Promise<(import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
+    })[]>;
+    getDoctorById(doctorId: string): Promise<import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
+    }>;
+    searchDoctors(query: string, specialization?: string): Promise<(import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
+    })[]>;
 }

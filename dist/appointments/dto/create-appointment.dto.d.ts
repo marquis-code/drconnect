@@ -1,10 +1,17 @@
+import { ConsultationType, ConsultationMode, ConsultationCategory } from "../../schemas/appointment.schema";
 export declare class CreateAppointmentDto {
-    planId?: string;
-    consultationType: string;
-    consultationMode: string;
+    planId: string;
+    doctorId?: string;
+    consultationType: ConsultationType;
+    consultationCategory: ConsultationCategory;
+    consultationMode: ConsultationMode;
     date: string;
     timeSlot: string;
-    location: string;
+    duration: number;
+    location?: string;
     price: number;
-    duration?: number;
+    patientNotes?: string;
+    chiefComplaint?: string;
+    symptoms?: string[];
+    previousAppointmentId?: string;
 }

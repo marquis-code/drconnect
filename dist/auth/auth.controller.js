@@ -19,6 +19,7 @@ const register_dto_1 = require("./dto/register.dto");
 const login_dto_1 = require("./dto/login.dto");
 const forgot_password_dto_1 = require("./dto/forgot-password.dto");
 const reset_password_dto_1 = require("./dto/reset-password.dto");
+const update_profile_dto_1 = require("./dto/update-profile.dto");
 const jwt_guard_1 = require("./guards/jwt.guard");
 const google_guard_1 = require("./guards/google.guard");
 const current_user_decorator_1 = require("./decorators/current-user.decorator");
@@ -46,23 +47,35 @@ let AuthController = class AuthController {
     async verifyEmail(token) {
         return this.authService.verifyEmail(token);
     }
+    async resendVerification(email) {
+        return this.authService.resendVerificationEmail(email);
+    }
     async getProfile(user) {
         return this.authService.getProfile(user.userId);
     }
     async updateProfile(user, updateData) {
         return this.authService.updateProfile(user.userId, updateData);
     }
+    async getAllDoctors() {
+        return this.authService.getAllDoctors();
+    }
+    async searchDoctors(query, specialization) {
+        return this.authService.searchDoctors(query, specialization);
+    }
+    async getDoctorById(id) {
+        return this.authService.getDoctorById(id);
+    }
 };
 exports.AuthController = AuthController;
 __decorate([
-    (0, common_1.Post)('register'),
+    (0, common_1.Post)("register"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [register_dto_1.RegisterDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
-    (0, common_1.Post)('login'),
+    (0, common_1.Post)("login"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [login_dto_1.LoginDto]),
@@ -85,28 +98,35 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "googleAuthCallback", null);
 __decorate([
-    (0, common_1.Post)('forgot-password'),
+    (0, common_1.Post)("forgot-password"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [forgot_password_dto_1.ForgotPasswordDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "forgotPassword", null);
 __decorate([
-    (0, common_1.Post)('reset-password'),
+    (0, common_1.Post)("reset-password"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [reset_password_dto_1.ResetPasswordDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "resetPassword", null);
 __decorate([
-    (0, common_1.Get)('verify-email/:token'),
-    __param(0, (0, common_1.Param)('token')),
+    (0, common_1.Get)("verify-email/:token"),
+    __param(0, (0, common_1.Param)("token")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "verifyEmail", null);
 __decorate([
-    (0, common_1.Get)('profile'),
+    (0, common_1.Post)("resend-verification"),
+    __param(0, (0, common_1.Body)("email")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "resendVerification", null);
+__decorate([
+    (0, common_1.Get)("profile"),
     (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
@@ -114,14 +134,38 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "getProfile", null);
 __decorate([
-    (0, common_1.Post)("profile/update"),
+    (0, common_1.Patch)("profile"),
     (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, update_profile_dto_1.UpdateProfileDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "updateProfile", null);
+__decorate([
+    (0, common_1.Get)("doctors"),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "getAllDoctors", null);
+__decorate([
+    (0, common_1.Get)("doctors/search"),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Query)("q")),
+    __param(1, (0, common_1.Query)("specialization")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "searchDoctors", null);
+__decorate([
+    (0, common_1.Get)("doctors/:id"),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Param)("id")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "getDoctorById", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)("auth"),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

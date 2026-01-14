@@ -1,8 +1,8 @@
 import { Model } from "mongoose";
-import { User } from "src/schemas/user.schema";
-import { Appointment } from "src/schemas/appointment.schema";
+import { User, UserRole } from "src/schemas/user.schema";
+import { Appointment, AppointmentStatus } from "src/schemas/appointment.schema";
 import { Transaction } from "src/schemas/transaction.schema";
-import { Availability } from "src/schemas/availability.schema";
+import { Availability, ConsultationCategory } from "src/schemas/availability.schema";
 import { Settings } from "src/schemas/settings.schema";
 export declare class AdminService {
     private userModel;
@@ -12,9 +12,11 @@ export declare class AdminService {
     private settingsModel;
     constructor(userModel: Model<User>, appointmentModel: Model<Appointment>, transactionModel: Model<Transaction>, availabilityModel: Model<Availability>, settingsModel: Model<Settings>);
     getDashboardStats(): Promise<{
-        totalUsers: number;
+        totalPatients: number;
+        totalDoctors: number;
         totalAppointments: number;
         completedAppointments: number;
+        pendingAppointments: number;
         totalRevenue: any;
     }>;
     getAllUsers(filter?: any): Promise<(import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
@@ -22,12 +24,27 @@ export declare class AdminService {
     }> & {
         __v: number;
     })[]>;
+    getUsersByRole(role: UserRole): Promise<(import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
+    })[]>;
+    getAllDoctors(): Promise<(import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
+    })[]>;
+    verifyDoctor(doctorId: string, adminId: string): Promise<import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
+    }>;
     getAllAppointments(filter?: any): Promise<(import("mongoose").Document<unknown, {}, Appointment, {}, {}> & Appointment & Required<{
         _id: unknown;
     }> & {
         __v: number;
     })[]>;
-    getAppointmentsByStatus(status: string): Promise<(import("mongoose").Document<unknown, {}, Appointment, {}, {}> & Appointment & Required<{
+    getAppointmentsByStatus(status: AppointmentStatus): Promise<(import("mongoose").Document<unknown, {}, Appointment, {}, {}> & Appointment & Required<{
         _id: unknown;
     }> & {
         __v: number;
@@ -42,23 +59,25 @@ export declare class AdminService {
     }> & {
         __v: number;
     }>;
-    getAvailability(): Promise<(import("mongoose").Document<unknown, {}, Availability, {}, {}> & Availability & Required<{
+    getAvailability(doctorId?: string): Promise<(import("mongoose").Document<unknown, {}, Availability, {}, {}> & Availability & Required<{
         _id: unknown;
     }> & {
         __v: number;
     })[]>;
-    getAvailabilityByDate(dateString?: string, timeString?: string, consultationType?: string): Promise<{
+    getAvailabilityByDate(dateString?: string, timeString?: string, consultationCategory?: ConsultationCategory, doctorId?: string): Promise<{
         date: string;
         dayOfWeek: number;
         time: string;
         availability: ({
-            consultationType: string;
+            consultationCategory: ConsultationCategory;
+            doctorId: import("mongoose").Types.ObjectId;
             isAvailable: boolean;
             reason: string;
             time?: undefined;
             timeSlot?: undefined;
         } | {
-            consultationType: string;
+            consultationCategory: ConsultationCategory;
+            doctorId: import("mongoose").Types.ObjectId;
             time: string;
             timeSlot: {
                 startTime: string;
@@ -73,8 +92,15 @@ export declare class AdminService {
         availability: {
             _id: unknown;
             dayOfWeek: number;
-            consultationType: string;
+            consultationCategory: ConsultationCategory;
+            doctorId: import("mongoose").Types.ObjectId;
             isAvailable: boolean;
+            allowedConsultationTypes: import("src/schemas/availability.schema").ConsultationType[];
+            allowedConsultationModes: import("src/schemas/availability.schema").ConsultationMode[];
+            location: string;
+            maxConcurrentAppointments: number;
+            slotDuration: number;
+            bufferTime: number;
             timeSlots: {
                 startTime: string;
                 endTime: string;

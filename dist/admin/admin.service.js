@@ -31,58 +31,137 @@ let AdminService = class AdminService {
     }
     async getDashboardStats() {
         var _a;
-        const totalUsers = await this.userModel.countDocuments({ role: "user" });
+        const totalPatients = await this.userModel.countDocuments({ role: user_schema_1.UserRole.PATIENT });
+        const totalDoctors = await this.userModel.countDocuments({ role: user_schema_1.UserRole.DOCTOR });
         const totalAppointments = await this.appointmentModel.countDocuments();
-        const completedAppointments = await this.appointmentModel.countDocuments({ status: "completed" });
+        const completedAppointments = await this.appointmentModel.countDocuments({
+            status: appointment_schema_1.AppointmentStatus.COMPLETED
+        });
+        const pendingAppointments = await this.appointmentModel.countDocuments({
+            status: appointment_schema_1.AppointmentStatus.BOOKED
+        });
         const totalRevenue = await this.transactionModel.aggregate([
             { $match: { paymentStatus: "successful" } },
             { $group: { _id: null, total: { $sum: "$amount" } } },
         ]);
         return {
-            totalUsers,
+            totalPatients,
+            totalDoctors,
             totalAppointments,
             completedAppointments,
+            pendingAppointments,
             totalRevenue: ((_a = totalRevenue[0]) === null || _a === void 0 ? void 0 : _a.total) || 0,
         };
     }
     async getAllUsers(filter) {
-        const query = filter || { role: "user" };
-        return this.userModel.find(query).select("-password -resetToken");
+        const query = filter || {};
+        return this.userModel.find(query).select("-password -resetToken -verificationToken -resetTokenExpiry");
+    }
+    async getUsersByRole(role) {
+        return this.userModel
+            .find({ role })
+            .select("-password -resetToken -verificationToken -resetTokenExpiry")
+            .sort({ createdAt: -1 });
+    }
+    async getAllDoctors() {
+        return this.userModel
+            .find({ role: user_schema_1.UserRole.DOCTOR })
+            .select("-password -resetToken -verificationToken -resetTokenExpiry")
+            .sort({ averageRating: -1 });
+    }
+    async verifyDoctor(doctorId, adminId) {
+        const doctor = await this.userModel.findById(doctorId);
+        if (!doctor) {
+            throw new common_1.BadRequestException("Doctor not found");
+        }
+        if (doctor.role !== user_schema_1.UserRole.DOCTOR) {
+            throw new common_1.BadRequestException("User is not a doctor");
+        }
+        doctor.isVerified = true;
+        doctor.verifiedAt = new Date();
+        doctor.verifiedBy = adminId;
+        await doctor.save();
+        return doctor;
     }
     async getAllAppointments(filter) {
         const query = filter || {};
-        return this.appointmentModel.find(query).populate("userId", "name email phone");
+        return this.appointmentModel
+            .find(query)
+            .populate("userId", "name email phone")
+            .populate("doctorId", "name email specialization")
+            .populate("planId", "name consultationType duration price")
+            .sort({ date: -1 });
     }
     async getAppointmentsByStatus(status) {
-        return this.appointmentModel.find({ status }).populate("userId", "name email phone");
+        return this.appointmentModel
+            .find({ status })
+            .populate("userId", "name email phone")
+            .populate("doctorId", "name email specialization")
+            .populate("planId", "name consultationType duration price")
+            .sort({ date: -1 });
     }
     async getAllTransactions() {
-        return this.transactionModel.find().populate("userId", "name email").populate("appointmentId");
+        return this.transactionModel
+            .find()
+            .populate("userId", "name email")
+            .populate("appointmentId")
+            .sort({ createdAt: -1 });
     }
     async setAvailability(availabilityData) {
-        const { dayOfWeek, timeSlots, consultationType } = availabilityData;
-        const existingAvailability = await this.availabilityModel.findOne({
+        const { dayOfWeek, timeSlots, consultationCategory, doctorId, allowedConsultationTypes, allowedConsultationModes, location, maxConcurrentAppointments, slotDuration, bufferTime } = availabilityData;
+        const query = {
             dayOfWeek,
-            consultationType,
-        });
+            consultationCategory,
+        };
+        if (doctorId) {
+            query.doctorId = doctorId;
+        }
+        const existingAvailability = await this.availabilityModel.findOne(query);
         if (existingAvailability) {
             existingAvailability.timeSlots = timeSlots;
+            if (allowedConsultationTypes) {
+                existingAvailability.allowedConsultationTypes = allowedConsultationTypes;
+            }
+            if (allowedConsultationModes) {
+                existingAvailability.allowedConsultationModes = allowedConsultationModes;
+            }
+            if (location)
+                existingAvailability.location = location;
+            if (maxConcurrentAppointments) {
+                existingAvailability.maxConcurrentAppointments = maxConcurrentAppointments;
+            }
+            if (slotDuration)
+                existingAvailability.slotDuration = slotDuration;
+            if (bufferTime !== undefined)
+                existingAvailability.bufferTime = bufferTime;
             await existingAvailability.save();
             return existingAvailability;
         }
         const availability = new this.availabilityModel({
             dayOfWeek,
             timeSlots,
-            consultationType,
+            consultationCategory,
+            doctorId: doctorId || undefined,
+            allowedConsultationTypes: allowedConsultationTypes || [],
+            allowedConsultationModes: allowedConsultationModes || [],
+            location,
+            maxConcurrentAppointments: maxConcurrentAppointments || 1,
+            slotDuration: slotDuration || 30,
+            bufferTime: bufferTime || 0,
             isAvailable: true,
+            isRecurring: true,
         });
         await availability.save();
         return availability;
     }
-    async getAvailability() {
-        return this.availabilityModel.find();
+    async getAvailability(doctorId) {
+        const query = {};
+        if (doctorId) {
+            query.doctorId = doctorId;
+        }
+        return this.availabilityModel.find(query).populate("doctorId", "name specialization");
     }
-    async getAvailabilityByDate(dateString, timeString, consultationType) {
+    async getAvailabilityByDate(dateString, timeString, consultationCategory, doctorId) {
         const now = new Date();
         const targetDate = dateString ? new Date(dateString) : now;
         const dayOfWeek = targetDate.getDay();
@@ -92,11 +171,14 @@ let AdminService = class AdminService {
             dayOfWeek,
             isAvailable: true,
         };
-        if (consultationType) {
-            if (!['physical', 'virtual'].includes(consultationType)) {
-                throw new common_1.BadRequestException('Invalid consultation type. Must be "physical" or "virtual"');
+        if (consultationCategory) {
+            if (!Object.values(availability_schema_1.ConsultationCategory).includes(consultationCategory)) {
+                throw new common_1.BadRequestException(`Invalid consultation category. Must be one of: ${Object.values(availability_schema_1.ConsultationCategory).join(", ")}`);
             }
-            availabilityQuery.consultationType = consultationType;
+            availabilityQuery.consultationCategory = consultationCategory;
+        }
+        if (doctorId) {
+            availabilityQuery.doctorId = doctorId;
         }
         const availability = await this.availabilityModel.find(availabilityQuery);
         const startOfDay = new Date(targetDate);
@@ -108,31 +190,46 @@ let AdminService = class AdminService {
                 $gte: startOfDay,
                 $lte: endOfDay,
             },
-            status: { $ne: "canceled" },
+            status: {
+                $nin: [appointment_schema_1.AppointmentStatus.CANCELED, appointment_schema_1.AppointmentStatus.NO_SHOW]
+            },
         };
-        if (consultationType) {
-            appointmentQuery.consultationType = consultationType;
+        if (consultationCategory) {
+            appointmentQuery.consultationCategory = consultationCategory;
+        }
+        if (doctorId) {
+            appointmentQuery.doctorId = doctorId;
         }
         const bookedAppointments = await this.appointmentModel.find(appointmentQuery);
-        const bookedSlots = bookedAppointments.map(apt => ({
-            timeSlot: apt.timeSlot,
-            consultationType: apt.consultationType,
-        }));
+        const bookedSlots = bookedAppointments.map(apt => {
+            var _a;
+            return ({
+                timeSlot: apt.timeSlot,
+                consultationCategory: apt.consultationCategory,
+                doctorId: (_a = apt.doctorId) === null || _a === void 0 ? void 0 : _a.toString(),
+            });
+        });
         if (timeString || !dateString) {
             const checkTimeString = timeString || currentTimeString;
             const timeAvailability = availability.map(avail => {
                 const timeSlot = avail.timeSlots.find(slot => slot.startTime === checkTimeString);
                 if (!timeSlot) {
                     return {
-                        consultationType: avail.consultationType,
+                        consultationCategory: avail.consultationCategory,
+                        doctorId: avail.doctorId,
                         isAvailable: false,
                         reason: 'Time slot not in schedule',
                     };
                 }
-                const isBooked = bookedSlots.some(booked => booked.timeSlot === checkTimeString &&
-                    booked.consultationType === avail.consultationType);
+                const isBooked = bookedSlots.some(booked => {
+                    var _a;
+                    return booked.timeSlot === checkTimeString &&
+                        booked.consultationCategory === avail.consultationCategory &&
+                        (!avail.doctorId || booked.doctorId === ((_a = avail.doctorId) === null || _a === void 0 ? void 0 : _a.toString()));
+                });
                 return {
-                    consultationType: avail.consultationType,
+                    consultationCategory: avail.consultationCategory,
+                    doctorId: avail.doctorId,
                     time: checkTimeString,
                     timeSlot,
                     isAvailable: !isBooked,
@@ -148,8 +245,12 @@ let AdminService = class AdminService {
         }
         const availableSlots = availability.map(avail => {
             const availableTimeSlots = avail.timeSlots.map(slot => {
-                const isBooked = bookedSlots.some(booked => booked.timeSlot === slot.startTime &&
-                    booked.consultationType === avail.consultationType);
+                const isBooked = bookedSlots.some(booked => {
+                    var _a;
+                    return booked.timeSlot === slot.startTime &&
+                        booked.consultationCategory === avail.consultationCategory &&
+                        (!avail.doctorId || booked.doctorId === ((_a = avail.doctorId) === null || _a === void 0 ? void 0 : _a.toString()));
+                });
                 return {
                     startTime: slot.startTime,
                     endTime: slot.endTime,
@@ -159,8 +260,15 @@ let AdminService = class AdminService {
             return {
                 _id: avail._id,
                 dayOfWeek: avail.dayOfWeek,
-                consultationType: avail.consultationType,
+                consultationCategory: avail.consultationCategory,
+                doctorId: avail.doctorId,
                 isAvailable: avail.isAvailable,
+                allowedConsultationTypes: avail.allowedConsultationTypes,
+                allowedConsultationModes: avail.allowedConsultationModes,
+                location: avail.location,
+                maxConcurrentAppointments: avail.maxConcurrentAppointments,
+                slotDuration: avail.slotDuration,
+                bufferTime: avail.bufferTime,
                 timeSlots: availableTimeSlots,
             };
         });
@@ -201,7 +309,12 @@ let AdminService = class AdminService {
         return this.transactionModel.find().lean();
     }
     async exportAppointments() {
-        return this.appointmentModel.find().lean();
+        return this.appointmentModel
+            .find()
+            .populate("userId", "name email phone")
+            .populate("doctorId", "name email specialization")
+            .populate("planId", "name consultationType duration price")
+            .lean();
     }
 };
 exports.AdminService = AdminService;

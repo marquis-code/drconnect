@@ -16,7 +16,12 @@ exports.AdminController = void 0;
 const common_1 = require("@nestjs/common");
 const admin_service_1 = require("./admin.service");
 const jwt_guard_1 = require("../auth/guards/jwt.guard");
-const admin_guard_1 = require("../auth/guards/admin.guard");
+const roles_guard_1 = require("../auth/guards/roles.guard");
+const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const current_user_decorator_1 = require("../auth/decorators/current-user.decorator");
+const appointment_schema_1 = require("../schemas/appointment.schema");
+const availability_schema_1 = require("../schemas/availability.schema");
+const user_schema_1 = require("../schemas/user.schema");
 let AdminController = class AdminController {
     constructor(adminService) {
         this.adminService = adminService;
@@ -24,8 +29,17 @@ let AdminController = class AdminController {
     async getDashboardStats() {
         return this.adminService.getDashboardStats();
     }
-    async getAllUsers() {
+    async getAllUsers(role) {
+        if (role) {
+            return this.adminService.getUsersByRole(role);
+        }
         return this.adminService.getAllUsers();
+    }
+    async getAllDoctors() {
+        return this.adminService.getAllDoctors();
+    }
+    async verifyDoctor(doctorId, user) {
+        return this.adminService.verifyDoctor(doctorId, user.userId);
     }
     async getAllAppointments(status) {
         if (status) {
@@ -39,11 +53,11 @@ let AdminController = class AdminController {
     async setAvailability(availabilityData) {
         return this.adminService.setAvailability(availabilityData);
     }
-    async getAvailability() {
-        return this.adminService.getAvailability();
+    async getAvailability(doctorId) {
+        return this.adminService.getAvailability(doctorId);
     }
-    async getAvailabilityByDate(date, time, consultationType) {
-        return this.adminService.getAvailabilityByDate(date, time, consultationType);
+    async getAvailabilityByDate(date, time, consultationCategory, doctorId) {
+        return this.adminService.getAvailabilityByDate(date, time, consultationCategory, doctorId);
     }
     async updateSettings(settingsData) {
         return this.adminService.updateSettings(settingsData);
@@ -67,13 +81,28 @@ __decorate([
 ], AdminController.prototype, "getDashboardStats", null);
 __decorate([
     (0, common_1.Get)("users"),
+    __param(0, (0, common_1.Query)("role")),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getAllUsers", null);
 __decorate([
-    (0, common_1.Get)('appointments'),
-    __param(0, (0, common_1.Query)('status')),
+    (0, common_1.Get)("doctors"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "getAllDoctors", null);
+__decorate([
+    (0, common_1.Put)("doctors/:id/verify"),
+    __param(0, (0, common_1.Param)("id")),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "verifyDoctor", null);
+__decorate([
+    (0, common_1.Get)("appointments"),
+    __param(0, (0, common_1.Query)("status")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
@@ -85,7 +114,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getAllTransactions", null);
 __decorate([
-    (0, common_1.Post)('availability'),
+    (0, common_1.Post)("availability"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -93,21 +122,23 @@ __decorate([
 ], AdminController.prototype, "setAvailability", null);
 __decorate([
     (0, common_1.Get)("availability"),
+    __param(0, (0, common_1.Query)("doctorId")),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getAvailability", null);
 __decorate([
     (0, common_1.Get)("availability/by-date"),
-    __param(0, (0, common_1.Query)('date')),
-    __param(1, (0, common_1.Query)('time')),
-    __param(2, (0, common_1.Query)('consultationType')),
+    __param(0, (0, common_1.Query)("date")),
+    __param(1, (0, common_1.Query)("time")),
+    __param(2, (0, common_1.Query)("consultationCategory")),
+    __param(3, (0, common_1.Query)("doctorId")),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getAvailabilityByDate", null);
 __decorate([
-    (0, common_1.Post)('settings'),
+    (0, common_1.Post)("settings"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -133,7 +164,8 @@ __decorate([
 ], AdminController.prototype, "exportAppointments", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.Controller)("admin"),
-    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)("admin"),
     __metadata("design:paramtypes", [admin_service_1.AdminService])
 ], AdminController);
 //# sourceMappingURL=admin.controller.js.map
