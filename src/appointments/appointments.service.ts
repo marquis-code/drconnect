@@ -316,191 +316,380 @@ export class AppointmentsService {
     private consultationPlansService: ConsultationPlansService,
   ) {}
 
+  // async createAppointment(userId: string, createAppointmentDto: CreateAppointmentDto) {
+  //   const { 
+  //     planId, 
+  //     doctorId,
+  //     consultationType, 
+  //     consultationCategory,
+  //     consultationMode, 
+  //     date, 
+  //     timeSlot, 
+  //     location, 
+  //     price, 
+  //     duration,
+  //     patientNotes,
+  //     chiefComplaint,
+  //     symptoms,
+  //     previousAppointmentId
+  //   } = createAppointmentDto
+
+  //   // Validate plan
+  //   const plan = await this.consultationPlansService.getPlanById(planId)
+    
+  //   // Check if plan is available for the selected date/time
+  //   const isAvailable = await this.consultationPlansService.isPlanAvailableForDateTime(
+  //     planId,
+  //     new Date(date),
+  //     timeSlot
+  //   )
+
+  //   if (!isAvailable) {
+  //     throw new BadRequestException(
+  //       "This consultation plan is not available for the selected date and time"
+  //     )
+  //   }
+
+  //   // Validate consultation type matches plan
+  //   if (plan.consultationType !== consultationType) {
+  //     throw new BadRequestException(
+  //       `Consultation type must be ${plan.consultationType} for this plan`
+  //     )
+  //   }
+
+  //   // Validate consultation category matches plan
+  //   if (plan.consultationCategory !== consultationCategory) {
+  //     throw new BadRequestException(
+  //       `Consultation category must be ${plan.consultationCategory} for this plan`
+  //     )
+  //   }
+
+  //   // Validate consultation mode
+  //   if (!plan.consultationModes.includes(consultationMode)) {
+  //     throw new BadRequestException(
+  //       `Consultation mode ${consultationMode} is not available for this plan`
+  //     )
+  //   }
+
+  //   // Check patient eligibility
+  //   if (plan.isNewPatientOnly) {
+  //     const existingAppointments = await this.appointmentModel.countDocuments({
+  //       userId: new Types.ObjectId(userId),
+  //       status: { $in: [AppointmentStatus.COMPLETED] }
+  //     })
+      
+  //     if (existingAppointments > 0) {
+  //       throw new BadRequestException("This plan is only available for new patients")
+  //     }
+  //   }
+
+  //   if (plan.isExistingPatientOnly) {
+  //     const existingAppointments = await this.appointmentModel.countDocuments({
+  //       userId: new Types.ObjectId(userId),
+  //       status: { $in: [AppointmentStatus.COMPLETED] }
+  //     })
+      
+  //     if (existingAppointments === 0) {
+  //       throw new BadRequestException("This plan is only available for existing patients")
+  //     }
+  //   }
+
+  //   // Check minimum advance booking
+  //   const appointmentDate = new Date(date)
+  //   const now = new Date()
+  //   const hoursDifference = (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+    
+  //   if (hoursDifference < plan.minAdvanceBookingHours) {
+  //     throw new BadRequestException(
+  //       `This appointment must be booked at least ${plan.minAdvanceBookingHours} hours in advance`
+  //     )
+  //   }
+
+  //   if (hoursDifference > plan.maxAdvanceBookingHours) {
+  //     throw new BadRequestException(
+  //       `This appointment cannot be booked more than ${plan.maxAdvanceBookingHours} hours in advance`
+  //     )
+  //   }
+
+  //   // Check if slot is already booked
+  //   const isSlotAvailable = await this.checkSlotAvailability(
+  //     date,
+  //     timeSlot,
+  //     consultationType,
+  //     doctorId
+  //   )
+
+  //   if (!isSlotAvailable) {
+  //     throw new BadRequestException(
+  //       `This time slot is no longer available. Please choose another time.`
+  //     )
+  //   }
+
+  //   const appointment = new this.appointmentModel({
+  //     userId: new Types.ObjectId(userId),
+  //     doctorId: doctorId ? new Types.ObjectId(doctorId) : undefined,
+  //     planId: new Types.ObjectId(planId),
+  //     consultationType,
+  //     consultationCategory,
+  //     consultationMode,
+  //     date: new Date(date),
+  //     timeSlot,
+  //     duration,
+  //     location,
+  //     price,
+  //     patientNotes,
+  //     chiefComplaint,
+  //     symptoms,
+  //     previousAppointmentId: previousAppointmentId ? new Types.ObjectId(previousAppointmentId) : undefined,
+  //     paymentStatus: PaymentStatus.PENDING,
+  //     status: AppointmentStatus.BOOKED,
+  //     scheduledStartTime: this.calculateScheduledStartTime(date, timeSlot)
+  //   })
+
+  //   await appointment.save()
+
+  //   // If this is a follow-up, link it to previous appointment
+  //   if (previousAppointmentId) {
+  //     await this.appointmentModel.findByIdAndUpdate(
+  //       previousAppointmentId,
+  //       { nextAppointmentId: appointment._id }
+  //     )
+  //   }
+
+  //   return appointment
+  // }
+
   async createAppointment(userId: string, createAppointmentDto: CreateAppointmentDto) {
-    const { 
-      planId, 
-      doctorId,
-      consultationType, 
-      consultationCategory,
-      consultationMode, 
-      date, 
-      timeSlot, 
-      location, 
-      price, 
-      duration,
-      patientNotes,
-      chiefComplaint,
-      symptoms,
-      previousAppointmentId
-    } = createAppointmentDto
+  const { 
+    planId, 
+    doctorId,
+    consultationType, 
+    consultationCategory,
+    consultationMode, 
+    date, 
+    timeSlot, 
+    location, 
+    price, 
+    duration,
+    patientNotes,
+    chiefComplaint,
+    symptoms,
+    previousAppointmentId
+  } = createAppointmentDto
 
-    // Validate plan
-    const plan = await this.consultationPlansService.getPlanById(planId)
-    
-    // Check if plan is available for the selected date/time
-    const isAvailable = await this.consultationPlansService.isPlanAvailableForDateTime(
-      planId,
-      new Date(date),
-      timeSlot
+  // Validate plan
+  const plan = await this.consultationPlansService.getPlanById(planId)
+  
+  // Parse date string to UTC date without timezone conversion
+  const appointmentDate = new Date(date + 'T00:00:00Z')
+  
+  // Check if plan is available for the selected date/time
+  const isAvailable = await this.consultationPlansService.isPlanAvailableForDateTime(
+    planId,
+    appointmentDate,
+    timeSlot
+  )
+
+  if (!isAvailable) {
+    throw new BadRequestException(
+      "This consultation plan is not available for the selected date and time"
     )
-
-    if (!isAvailable) {
-      throw new BadRequestException(
-        "This consultation plan is not available for the selected date and time"
-      )
-    }
-
-    // Validate consultation type matches plan
-    if (plan.consultationType !== consultationType) {
-      throw new BadRequestException(
-        `Consultation type must be ${plan.consultationType} for this plan`
-      )
-    }
-
-    // Validate consultation category matches plan
-    if (plan.consultationCategory !== consultationCategory) {
-      throw new BadRequestException(
-        `Consultation category must be ${plan.consultationCategory} for this plan`
-      )
-    }
-
-    // Validate consultation mode
-    if (!plan.consultationModes.includes(consultationMode)) {
-      throw new BadRequestException(
-        `Consultation mode ${consultationMode} is not available for this plan`
-      )
-    }
-
-    // Check patient eligibility
-    if (plan.isNewPatientOnly) {
-      const existingAppointments = await this.appointmentModel.countDocuments({
-        userId: new Types.ObjectId(userId),
-        status: { $in: [AppointmentStatus.COMPLETED] }
-      })
-      
-      if (existingAppointments > 0) {
-        throw new BadRequestException("This plan is only available for new patients")
-      }
-    }
-
-    if (plan.isExistingPatientOnly) {
-      const existingAppointments = await this.appointmentModel.countDocuments({
-        userId: new Types.ObjectId(userId),
-        status: { $in: [AppointmentStatus.COMPLETED] }
-      })
-      
-      if (existingAppointments === 0) {
-        throw new BadRequestException("This plan is only available for existing patients")
-      }
-    }
-
-    // Check minimum advance booking
-    const appointmentDate = new Date(date)
-    const now = new Date()
-    const hoursDifference = (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60)
-    
-    if (hoursDifference < plan.minAdvanceBookingHours) {
-      throw new BadRequestException(
-        `This appointment must be booked at least ${plan.minAdvanceBookingHours} hours in advance`
-      )
-    }
-
-    if (hoursDifference > plan.maxAdvanceBookingHours) {
-      throw new BadRequestException(
-        `This appointment cannot be booked more than ${plan.maxAdvanceBookingHours} hours in advance`
-      )
-    }
-
-    // Check if slot is already booked
-    const isSlotAvailable = await this.checkSlotAvailability(
-      date,
-      timeSlot,
-      consultationType,
-      doctorId
-    )
-
-    if (!isSlotAvailable) {
-      throw new BadRequestException(
-        `This time slot is no longer available. Please choose another time.`
-      )
-    }
-
-    const appointment = new this.appointmentModel({
-      userId: new Types.ObjectId(userId),
-      doctorId: doctorId ? new Types.ObjectId(doctorId) : undefined,
-      planId: new Types.ObjectId(planId),
-      consultationType,
-      consultationCategory,
-      consultationMode,
-      date: new Date(date),
-      timeSlot,
-      duration,
-      location,
-      price,
-      patientNotes,
-      chiefComplaint,
-      symptoms,
-      previousAppointmentId: previousAppointmentId ? new Types.ObjectId(previousAppointmentId) : undefined,
-      paymentStatus: PaymentStatus.PENDING,
-      status: AppointmentStatus.BOOKED,
-      scheduledStartTime: this.calculateScheduledStartTime(date, timeSlot)
-    })
-
-    await appointment.save()
-
-    // If this is a follow-up, link it to previous appointment
-    if (previousAppointmentId) {
-      await this.appointmentModel.findByIdAndUpdate(
-        previousAppointmentId,
-        { nextAppointmentId: appointment._id }
-      )
-    }
-
-    return appointment
   }
+
+  // Validate consultation type matches plan
+  if (plan.consultationType !== consultationType) {
+    throw new BadRequestException(
+      `Consultation type must be ${plan.consultationType} for this plan`
+    )
+  }
+
+  // Validate consultation category matches plan
+  if (plan.consultationCategory !== consultationCategory) {
+    throw new BadRequestException(
+      `Consultation category must be ${plan.consultationCategory} for this plan`
+    )
+  }
+
+  // Validate consultation mode
+  if (!plan.consultationModes.includes(consultationMode)) {
+    throw new BadRequestException(
+      `Consultation mode ${consultationMode} is not available for this plan`
+    )
+  }
+
+  // Check patient eligibility
+  if (plan.isNewPatientOnly) {
+    const existingAppointments = await this.appointmentModel.countDocuments({
+      userId: new Types.ObjectId(userId),
+      status: { $in: [AppointmentStatus.COMPLETED] }
+    })
+    
+    if (existingAppointments > 0) {
+      throw new BadRequestException("This plan is only available for new patients")
+    }
+  }
+
+  if (plan.isExistingPatientOnly) {
+    const existingAppointments = await this.appointmentModel.countDocuments({
+      userId: new Types.ObjectId(userId),
+      status: { $in: [AppointmentStatus.COMPLETED] }
+    })
+    
+    if (existingAppointments === 0) {
+      throw new BadRequestException("This plan is only available for existing patients")
+    }
+  }
+
+  // Check minimum advance booking
+  const now = new Date()
+  const hoursDifference = (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+  
+  if (hoursDifference < plan.minAdvanceBookingHours) {
+    throw new BadRequestException(
+      `This appointment must be booked at least ${plan.minAdvanceBookingHours} hours in advance`
+    )
+  }
+
+  if (hoursDifference > plan.maxAdvanceBookingHours) {
+    throw new BadRequestException(
+      `This appointment cannot be booked more than ${plan.maxAdvanceBookingHours} hours in advance`
+    )
+  }
+
+  // Check if slot is already booked
+  const isSlotAvailable = await this.checkSlotAvailability(
+    date,
+    timeSlot,
+    consultationType,
+    doctorId
+  )
+
+  if (!isSlotAvailable) {
+    throw new BadRequestException(
+      `This time slot is no longer available. Please choose another time.`
+    )
+  }
+
+  const appointment = new this.appointmentModel({
+    userId: new Types.ObjectId(userId),
+    doctorId: doctorId ? new Types.ObjectId(doctorId) : undefined,
+    planId: new Types.ObjectId(planId),
+    consultationType,
+    consultationCategory,
+    consultationMode,
+    date: appointmentDate,
+    timeSlot,
+    duration,
+    location,
+    price,
+    patientNotes,
+    chiefComplaint,
+    symptoms,
+    previousAppointmentId: previousAppointmentId ? new Types.ObjectId(previousAppointmentId) : undefined,
+    paymentStatus: PaymentStatus.PENDING,
+    status: AppointmentStatus.BOOKED,
+    scheduledStartTime: this.calculateScheduledStartTime(date, timeSlot)
+  })
+
+  await appointment.save()
+
+  // If this is a follow-up, link it to previous appointment
+  if (previousAppointmentId) {
+    await this.appointmentModel.findByIdAndUpdate(
+      previousAppointmentId,
+      { nextAppointmentId: appointment._id }
+    )
+  }
+
+  return appointment
+}
+
+  // private calculateScheduledStartTime(date: string, timeSlot: string): Date {
+  //   const [startTime] = timeSlot.split('-')
+  //   const [hours, minutes] = startTime.split(':').map(Number)
+  //   const scheduledDate = new Date(date)
+  //   scheduledDate.setHours(hours, minutes, 0, 0)
+  //   return scheduledDate
+  // }
 
   private calculateScheduledStartTime(date: string, timeSlot: string): Date {
-    const [startTime] = timeSlot.split('-')
-    const [hours, minutes] = startTime.split(':').map(Number)
-    const scheduledDate = new Date(date)
-    scheduledDate.setHours(hours, minutes, 0, 0)
-    return scheduledDate
-  }
+  const [startTime] = timeSlot.split('-')
+  const [hours, minutes] = startTime.split(':').map(Number)
+  const scheduledDate = new Date(date + 'T00:00:00Z')
+  scheduledDate.setUTCHours(hours, minutes, 0, 0)
+  return scheduledDate
+}
+
+  // async checkSlotAvailability(
+  //   date: string,
+  //   timeSlot: string,
+  //   consultationType: string,
+  //   doctorId?: string
+  // ): Promise<boolean> {
+  //   const targetDate = new Date(date)
+  //   const startOfDay = new Date(targetDate)
+  //   startOfDay.setHours(0, 0, 0, 0)
+    
+  //   const endOfDay = new Date(targetDate)
+  //   endOfDay.setHours(23, 59, 59, 999)
+
+  //   const query: any = {
+  //     date: {
+  //       $gte: startOfDay,
+  //       $lte: endOfDay,
+  //     },
+  //     timeSlot,
+  //     consultationType,
+  //     status: { 
+  //       $nin: [AppointmentStatus.CANCELED, AppointmentStatus.NO_SHOW] 
+  //     },
+  //   }
+
+  //   // If doctor is specified, check their availability
+  //   if (doctorId) {
+  //     query.doctorId = new Types.ObjectId(doctorId)
+  //   }
+
+  //   const existingAppointment = await this.appointmentModel.findOne(query)
+
+  //   return !existingAppointment
+  // }
 
   async checkSlotAvailability(
-    date: string,
-    timeSlot: string,
-    consultationType: string,
-    doctorId?: string
-  ): Promise<boolean> {
-    const targetDate = new Date(date)
-    const startOfDay = new Date(targetDate)
-    startOfDay.setHours(0, 0, 0, 0)
-    
-    const endOfDay = new Date(targetDate)
-    endOfDay.setHours(23, 59, 59, 999)
+  date: string,
+  timeSlot: string,
+  consultationType: string,
+  doctorId?: string
+): Promise<boolean> {
+  // Parse date string as UTC
+  const targetDate = new Date(date + 'T00:00:00Z')
+  const startOfDay = new Date(targetDate)
+  startOfDay.setUTCHours(0, 0, 0, 0)
+  
+  const endOfDay = new Date(targetDate)
+  endOfDay.setUTCHours(23, 59, 59, 999)
 
-    const query: any = {
-      date: {
-        $gte: startOfDay,
-        $lte: endOfDay,
-      },
-      timeSlot,
-      consultationType,
-      status: { 
-        $nin: [AppointmentStatus.CANCELED, AppointmentStatus.NO_SHOW] 
-      },
-    }
-
-    // If doctor is specified, check their availability
-    if (doctorId) {
-      query.doctorId = new Types.ObjectId(doctorId)
-    }
-
-    const existingAppointment = await this.appointmentModel.findOne(query)
-
-    return !existingAppointment
+  const query: any = {
+    date: {
+      $gte: startOfDay,
+      $lte: endOfDay,
+    },
+    timeSlot,
+    consultationType,
+    status: { 
+      $nin: [AppointmentStatus.CANCELED, AppointmentStatus.NO_SHOW] 
+    },
   }
+
+  // If doctor is specified, check their availability
+  if (doctorId) {
+    query.doctorId = new Types.ObjectId(doctorId)
+  }
+
+  const existingAppointment = await this.appointmentModel.findOne(query)
+
+  return !existingAppointment
+}
 
   async generateMeetLinkAfterPayment(appointmentId: string): Promise<string> {
     const appointment = await this.appointmentModel.findById(appointmentId)
@@ -706,69 +895,136 @@ export class AppointmentsService {
     return appointment
   }
 
-  async rescheduleAppointment(
-    appointmentId: string, 
-    rescheduleDto: RescheduleAppointmentDto,
-    userId: string,
-    role: string
-  ) {
-    const { newDate, newTimeSlot } = rescheduleDto
+  // async rescheduleAppointment(
+  //   appointmentId: string, 
+  //   rescheduleDto: RescheduleAppointmentDto,
+  //   userId: string,
+  //   role: string
+  // ) {
+  //   const { newDate, newTimeSlot } = rescheduleDto
 
-    const appointment = await this.appointmentModel.findById(appointmentId)
+  //   const appointment = await this.appointmentModel.findById(appointmentId)
 
-    if (!appointment) {
-      throw new NotFoundException("Appointment not found")
-    }
+  //   if (!appointment) {
+  //     throw new NotFoundException("Appointment not found")
+  //   }
 
-    if (appointment.status === AppointmentStatus.CANCELED) {
-      throw new BadRequestException("Cannot reschedule a canceled appointment")
-    }
+  //   if (appointment.status === AppointmentStatus.CANCELED) {
+  //     throw new BadRequestException("Cannot reschedule a canceled appointment")
+  //   }
 
-    if (appointment.status === AppointmentStatus.COMPLETED) {
-      throw new BadRequestException("Cannot reschedule a completed appointment")
-    }
+  //   if (appointment.status === AppointmentStatus.COMPLETED) {
+  //     throw new BadRequestException("Cannot reschedule a completed appointment")
+  //   }
 
-    // Check authorization
-    if (role === "user" || role === "patient") {
-      if (appointment.userId.toString() !== userId) {
-        throw new ForbiddenException("You can only reschedule your own appointments")
-      }
-    }
+  //   // Check authorization
+  //   if (role === "user" || role === "patient") {
+  //     if (appointment.userId.toString() !== userId) {
+  //       throw new ForbiddenException("You can only reschedule your own appointments")
+  //     }
+  //   }
 
-    // Check if new slot is available
-    const isNewSlotAvailable = await this.checkSlotAvailability(
-      newDate,
-      newTimeSlot,
-      appointment.consultationType,
-      appointment.doctorId?.toString()
-    )
+  //   // Check if new slot is available
+  //   const isNewSlotAvailable = await this.checkSlotAvailability(
+  //     newDate,
+  //     newTimeSlot,
+  //     appointment.consultationType,
+  //     appointment.doctorId?.toString()
+  //   )
 
-    if (!isNewSlotAvailable) {
-      throw new BadRequestException(
-        "The new time slot is not available. Please choose another time."
-      )
-    }
+  //   if (!isNewSlotAvailable) {
+  //     throw new BadRequestException(
+  //       "The new time slot is not available. Please choose another time."
+  //     )
+  //   }
 
-    // Update appointment
-    appointment.date = new Date(newDate)
-    appointment.timeSlot = newTimeSlot
-    appointment.scheduledStartTime = this.calculateScheduledStartTime(newDate, newTimeSlot)
-    appointment.status = AppointmentStatus.RESCHEDULED
+  //   // Update appointment
+  //   appointment.date = new Date(newDate)
+  //   appointment.timeSlot = newTimeSlot
+  //   appointment.scheduledStartTime = this.calculateScheduledStartTime(newDate, newTimeSlot)
+  //   appointment.status = AppointmentStatus.RESCHEDULED
     
-    // Regenerate Meet link for virtual consultations
-    if (appointment.consultationCategory === "virtual" && appointment.googleMeetLink) {
-      try {
-        const meetLink = await this.googleMeetService.generateMeetLink(newDate, newTimeSlot)
-        appointment.googleMeetLink = meetLink
-      } catch (error) {
-        console.error("Failed to regenerate Google Meet link:", error)
-      }
-    }
+  //   // Regenerate Meet link for virtual consultations
+  //   if (appointment.consultationCategory === "virtual" && appointment.googleMeetLink) {
+  //     try {
+  //       const meetLink = await this.googleMeetService.generateMeetLink(newDate, newTimeSlot)
+  //       appointment.googleMeetLink = meetLink
+  //     } catch (error) {
+  //       console.error("Failed to regenerate Google Meet link:", error)
+  //     }
+  //   }
 
-    await appointment.save()
+  //   await appointment.save()
 
-    return appointment
+  //   return appointment
+  // }
+
+  async rescheduleAppointment(
+  appointmentId: string, 
+  rescheduleDto: RescheduleAppointmentDto,
+  userId: string,
+  role: string
+) {
+  const { newDate, newTimeSlot } = rescheduleDto
+
+  const appointment = await this.appointmentModel.findById(appointmentId)
+
+  if (!appointment) {
+    throw new NotFoundException("Appointment not found")
   }
+
+  if (appointment.status === AppointmentStatus.CANCELED) {
+    throw new BadRequestException("Cannot reschedule a canceled appointment")
+  }
+
+  if (appointment.status === AppointmentStatus.COMPLETED) {
+    throw new BadRequestException("Cannot reschedule a completed appointment")
+  }
+
+  // Check authorization
+  if (role === "user" || role === "patient") {
+    if (appointment.userId.toString() !== userId) {
+      throw new ForbiddenException("You can only reschedule your own appointments")
+    }
+  }
+
+  // Check if new slot is available
+  const isNewSlotAvailable = await this.checkSlotAvailability(
+    newDate,
+    newTimeSlot,
+    appointment.consultationType,
+    appointment.doctorId?.toString()
+  )
+
+  if (!isNewSlotAvailable) {
+    throw new BadRequestException(
+      "The new time slot is not available. Please choose another time."
+    )
+  }
+
+  // Parse new date as UTC
+  const newAppointmentDate = new Date(newDate + 'T00:00:00Z')
+
+  // Update appointment
+  appointment.date = newAppointmentDate
+  appointment.timeSlot = newTimeSlot
+  appointment.scheduledStartTime = this.calculateScheduledStartTime(newDate, newTimeSlot)
+  appointment.status = AppointmentStatus.RESCHEDULED
+  
+  // Regenerate Meet link for virtual consultations
+  if (appointment.consultationCategory === "virtual" && appointment.googleMeetLink) {
+    try {
+      const meetLink = await this.googleMeetService.generateMeetLink(newDate, newTimeSlot)
+      appointment.googleMeetLink = meetLink
+    } catch (error) {
+      console.error("Failed to regenerate Google Meet link:", error)
+    }
+  }
+
+  await appointment.save()
+
+  return appointment
+}
 
   async completeAppointment(
     appointmentId: string, 

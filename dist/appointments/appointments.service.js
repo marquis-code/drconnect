@@ -28,7 +28,8 @@ let AppointmentsService = class AppointmentsService {
     async createAppointment(userId, createAppointmentDto) {
         const { planId, doctorId, consultationType, consultationCategory, consultationMode, date, timeSlot, location, price, duration, patientNotes, chiefComplaint, symptoms, previousAppointmentId } = createAppointmentDto;
         const plan = await this.consultationPlansService.getPlanById(planId);
-        const isAvailable = await this.consultationPlansService.isPlanAvailableForDateTime(planId, new Date(date), timeSlot);
+        const appointmentDate = new Date(date + 'T00:00:00Z');
+        const isAvailable = await this.consultationPlansService.isPlanAvailableForDateTime(planId, appointmentDate, timeSlot);
         if (!isAvailable) {
             throw new common_1.BadRequestException("This consultation plan is not available for the selected date and time");
         }
@@ -59,7 +60,6 @@ let AppointmentsService = class AppointmentsService {
                 throw new common_1.BadRequestException("This plan is only available for existing patients");
             }
         }
-        const appointmentDate = new Date(date);
         const now = new Date();
         const hoursDifference = (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60);
         if (hoursDifference < plan.minAdvanceBookingHours) {
@@ -79,7 +79,7 @@ let AppointmentsService = class AppointmentsService {
             consultationType,
             consultationCategory,
             consultationMode,
-            date: new Date(date),
+            date: appointmentDate,
             timeSlot,
             duration,
             location,
@@ -101,16 +101,16 @@ let AppointmentsService = class AppointmentsService {
     calculateScheduledStartTime(date, timeSlot) {
         const [startTime] = timeSlot.split('-');
         const [hours, minutes] = startTime.split(':').map(Number);
-        const scheduledDate = new Date(date);
-        scheduledDate.setHours(hours, minutes, 0, 0);
+        const scheduledDate = new Date(date + 'T00:00:00Z');
+        scheduledDate.setUTCHours(hours, minutes, 0, 0);
         return scheduledDate;
     }
     async checkSlotAvailability(date, timeSlot, consultationType, doctorId) {
-        const targetDate = new Date(date);
+        const targetDate = new Date(date + 'T00:00:00Z');
         const startOfDay = new Date(targetDate);
-        startOfDay.setHours(0, 0, 0, 0);
+        startOfDay.setUTCHours(0, 0, 0, 0);
         const endOfDay = new Date(targetDate);
-        endOfDay.setHours(23, 59, 59, 999);
+        endOfDay.setUTCHours(23, 59, 59, 999);
         const query = {
             date: {
                 $gte: startOfDay,
@@ -302,7 +302,8 @@ let AppointmentsService = class AppointmentsService {
         if (!isNewSlotAvailable) {
             throw new common_1.BadRequestException("The new time slot is not available. Please choose another time.");
         }
-        appointment.date = new Date(newDate);
+        const newAppointmentDate = new Date(newDate + 'T00:00:00Z');
+        appointment.date = newAppointmentDate;
         appointment.timeSlot = newTimeSlot;
         appointment.scheduledStartTime = this.calculateScheduledStartTime(newDate, newTimeSlot);
         appointment.status = appointment_schema_1.AppointmentStatus.RESCHEDULED;

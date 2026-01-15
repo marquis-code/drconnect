@@ -156,7 +156,7 @@ let ConsultationPlansService = class ConsultationPlansService {
         if (!plan.isActive) {
             return false;
         }
-        const dayOfWeek = date.getDay();
+        const dayOfWeek = date.getUTCDay();
         if (plan.availableDays && plan.availableDays.length > 0) {
             if (!plan.availableDays.includes(dayOfWeek)) {
                 return false;
@@ -164,8 +164,9 @@ let ConsultationPlansService = class ConsultationPlansService {
         }
         if (plan.availableTimeRange) {
             const [startTime, endTime] = plan.availableTimeRange.split("-");
-            const slotTime = timeSlot.split("-")[0];
-            if (slotTime < startTime || slotTime > endTime) {
+            const slotStartTime = timeSlot.split("-")[0];
+            const slotEndTime = timeSlot.split("-")[1];
+            if (slotStartTime < startTime || slotEndTime > endTime) {
                 return false;
             }
         }
@@ -180,7 +181,7 @@ let ConsultationPlansService = class ConsultationPlansService {
         return true;
     }
     async getAvailablePlansForDate(date, consultationType, consultationCategory) {
-        const dayOfWeek = date.getDay();
+        const dayOfWeek = date.getUTCDay();
         const query = {
             isActive: true,
             $or: [

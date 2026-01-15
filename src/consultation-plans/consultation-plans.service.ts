@@ -200,34 +200,169 @@ export class ConsultationPlansService {
   }
 
   // Check if a plan is available for a specific date/time
-  async isPlanAvailableForDateTime(planId: string, date: Date, timeSlot: string): Promise<boolean> {
-    const plan = await this.getPlanById(planId)
+  // async isPlanAvailableForDateTime(planId: string, date: Date, timeSlot: string): Promise<boolean> {
+  //   const plan = await this.getPlanById(planId)
 
-    if (!plan.isActive) {
+  //   if (!plan.isActive) {
+  //     return false
+  //   }
+
+  //   const dayOfWeek = date.getDay()
+    
+  //   // Check if the day is available
+  //   if (plan.availableDays && plan.availableDays.length > 0) {
+  //     if (!plan.availableDays.includes(dayOfWeek)) {
+  //       return false
+  //     }
+  //   }
+
+  //   // Check time range if specified
+  //   if (plan.availableTimeRange) {
+  //     const [startTime, endTime] = plan.availableTimeRange.split("-")
+  //     const slotTime = timeSlot.split("-")[0] // Get start time from slot
+      
+  //     if (slotTime < startTime || slotTime > endTime) {
+  //       return false
+  //     }
+  //   }
+
+  //   // Check advance booking restrictions
+  //   const now = new Date()
+  //   const hoursDifference = (date.getTime() - now.getTime()) / (1000 * 60 * 60)
+
+  //   if (plan.minAdvanceBookingHours && hoursDifference < plan.minAdvanceBookingHours) {
+  //     return false
+  //   }
+
+  //   if (plan.maxAdvanceBookingHours && hoursDifference > plan.maxAdvanceBookingHours) {
+  //     return false
+  //   }
+
+  //   return true
+  // }
+
+  async isPlanAvailableForDateTime(planId: string, date: Date, timeSlot: string): Promise<boolean> {
+  const plan = await this.getPlanById(planId)
+
+  if (!plan.isActive) {
+    return false
+  }
+
+  // Get day of week from UTC date to match the date string format
+  const dayOfWeek = date.getUTCDay()
+  
+  // Check if the day is available
+  if (plan.availableDays && plan.availableDays.length > 0) {
+    if (!plan.availableDays.includes(dayOfWeek)) {
       return false
     }
+  }
 
-    const dayOfWeek = date.getDay()
+  // Check time range if specified
+  if (plan.availableTimeRange) {
+    const [startTime, endTime] = plan.availableTimeRange.split("-")
+    const slotStartTime = timeSlot.split("-")[0] // Get start time from slot
+    const slotEndTime = timeSlot.split("-")[1] // Get end time from slot
     
-    // Check if the day is available
-    if (plan.availableDays && plan.availableDays.length > 0) {
-      if (!plan.availableDays.includes(dayOfWeek)) {
-        return false
-      }
+    // Check if slot is within available time range
+    if (slotStartTime < startTime || slotEndTime > endTime) {
+      return false
     }
+  }
 
-    // Check time range if specified
-    if (plan.availableTimeRange) {
-      const [startTime, endTime] = plan.availableTimeRange.split("-")
-      const slotTime = timeSlot.split("-")[0] // Get start time from slot
-      
-      if (slotTime < startTime || slotTime > endTime) {
-        return false
-      }
-    }
+  // Check advance booking restrictions
+  const now = new Date()
+  const hoursDifference = (date.getTime() - now.getTime()) / (1000 * 60 * 60)
 
-    // Check advance booking restrictions
-    const now = new Date()
+  if (plan.minAdvanceBookingHours && hoursDifference < plan.minAdvanceBookingHours) {
+    return false
+  }
+
+  if (plan.maxAdvanceBookingHours && hoursDifference > plan.maxAdvanceBookingHours) {
+    return false
+  }
+
+  return true
+}
+
+  // Get available plans for a specific date
+  // async getAvailablePlansForDate(
+  //   date: Date,
+  //   consultationType?: ConsultationType,
+  //   consultationCategory?: ConsultationCategory
+  // ): Promise<ConsultationPlan[]> {
+  //   const dayOfWeek = date.getDay()
+    
+  //   const query: any = {
+  //     isActive: true,
+  //     $or: [
+  //       { availableDays: dayOfWeek },
+  //       { availableDays: { $size: 0 } } // Plans with no specific days set are available all days
+  //     ]
+  //   }
+
+  //   if (consultationType) {
+  //     query.consultationType = consultationType
+  //   }
+
+  //   if (consultationCategory) {
+  //     query.consultationCategory = consultationCategory
+  //   }
+
+  //   const plans = await this.consultationPlanModel
+  //     .find(query)
+  //     .sort({ sortOrder: 1 })
+  //     .exec()
+
+  //   // Further filter based on advance booking restrictions
+  //   const now = new Date()
+  //   return plans.filter(plan => {
+  //     const hoursDifference = (date.getTime() - now.getTime()) / (1000 * 60 * 60)
+
+  //     if (plan.minAdvanceBookingHours && hoursDifference < plan.minAdvanceBookingHours) {
+  //       return false
+  //     }
+
+  //     if (plan.maxAdvanceBookingHours && hoursDifference > plan.maxAdvanceBookingHours) {
+  //       return false
+  //     }
+
+  //     return true
+  //   })
+  // }
+
+  async getAvailablePlansForDate(
+  date: Date,
+  consultationType?: ConsultationType,
+  consultationCategory?: ConsultationCategory
+): Promise<ConsultationPlan[]> {
+  // Get day of week from UTC date
+  const dayOfWeek = date.getUTCDay()
+  
+  const query: any = {
+    isActive: true,
+    $or: [
+      { availableDays: dayOfWeek },
+      { availableDays: { $size: 0 } } // Plans with no specific days set are available all days
+    ]
+  }
+
+  if (consultationType) {
+    query.consultationType = consultationType
+  }
+
+  if (consultationCategory) {
+    query.consultationCategory = consultationCategory
+  }
+
+  const plans = await this.consultationPlanModel
+    .find(query)
+    .sort({ sortOrder: 1 })
+    .exec()
+
+  // Further filter based on advance booking restrictions
+  const now = new Date()
+  return plans.filter(plan => {
     const hoursDifference = (date.getTime() - now.getTime()) / (1000 * 60 * 60)
 
     if (plan.minAdvanceBookingHours && hoursDifference < plan.minAdvanceBookingHours) {
@@ -239,53 +374,8 @@ export class ConsultationPlansService {
     }
 
     return true
-  }
-
-  // Get available plans for a specific date
-  async getAvailablePlansForDate(
-    date: Date,
-    consultationType?: ConsultationType,
-    consultationCategory?: ConsultationCategory
-  ): Promise<ConsultationPlan[]> {
-    const dayOfWeek = date.getDay()
-    
-    const query: any = {
-      isActive: true,
-      $or: [
-        { availableDays: dayOfWeek },
-        { availableDays: { $size: 0 } } // Plans with no specific days set are available all days
-      ]
-    }
-
-    if (consultationType) {
-      query.consultationType = consultationType
-    }
-
-    if (consultationCategory) {
-      query.consultationCategory = consultationCategory
-    }
-
-    const plans = await this.consultationPlanModel
-      .find(query)
-      .sort({ sortOrder: 1 })
-      .exec()
-
-    // Further filter based on advance booking restrictions
-    const now = new Date()
-    return plans.filter(plan => {
-      const hoursDifference = (date.getTime() - now.getTime()) / (1000 * 60 * 60)
-
-      if (plan.minAdvanceBookingHours && hoursDifference < plan.minAdvanceBookingHours) {
-        return false
-      }
-
-      if (plan.maxAdvanceBookingHours && hoursDifference > plan.maxAdvanceBookingHours) {
-        return false
-      }
-
-      return true
-    })
-  }
+  })
+}
 
   // Validate time range format (HH:MM-HH:MM)
   private validateTimeRange(timeRange: string): void {
