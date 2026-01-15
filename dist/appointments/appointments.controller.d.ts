@@ -20,6 +20,11 @@ export declare class AppointmentsController {
     }> & {
         __v: number;
     })[]>;
+    getPatientStatus(req: Request): Promise<{
+        isNewPatient: boolean;
+        isExistingPatient: boolean;
+        completedAppointments: number;
+    }>;
     getUpcomingAppointments(req: Request): Promise<(import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
         _id: unknown;
     }> & {

@@ -241,47 +241,190 @@ export class ConsultationPlansService {
   //   return true
   // }
 
-  async isPlanAvailableForDateTime(planId: string, date: Date, timeSlot: string): Promise<boolean> {
+//   async isPlanAvailableForDateTime(planId: string, date: Date, timeSlot: string): Promise<boolean> {
+//   const plan = await this.getPlanById(planId)
+
+//   if (!plan.isActive) {
+//     return false
+//   }
+
+//   // Get day of week from UTC date to match the date string format
+//   const dayOfWeek = date.getUTCDay()
+  
+//   // Check if the day is available
+//   if (plan.availableDays && plan.availableDays.length > 0) {
+//     if (!plan.availableDays.includes(dayOfWeek)) {
+//       return false
+//     }
+//   }
+
+//   // Check time range if specified
+//   if (plan.availableTimeRange) {
+//     const [startTime, endTime] = plan.availableTimeRange.split("-")
+//     const slotStartTime = timeSlot.split("-")[0] // Get start time from slot
+//     const slotEndTime = timeSlot.split("-")[1] // Get end time from slot
+    
+//     // Check if slot is within available time range
+//     if (slotStartTime < startTime || slotEndTime > endTime) {
+//       return false
+//     }
+//   }
+
+//   // Check advance booking restrictions
+//   const now = new Date()
+//   const hoursDifference = (date.getTime() - now.getTime()) / (1000 * 60 * 60)
+
+//   if (plan.minAdvanceBookingHours && hoursDifference < plan.minAdvanceBookingHours) {
+//     return false
+//   }
+
+//   if (plan.maxAdvanceBookingHours && hoursDifference > plan.maxAdvanceBookingHours) {
+//     return false
+//   }
+
+//   return true
+// }
+
+// async isPlanAvailableForDateTime(planId: string, date: Date, timeSlot: string): Promise<boolean> {
+//   const plan = await this.getPlanById(planId)
+
+//   console.log('Checking plan availability:', {
+//     planId,
+//     date: date.toISOString(),
+//     timeSlot,
+//     planDetails: {
+//       isActive: plan.isActive,
+//       availableDays: plan.availableDays,
+//       availableTimeRange: plan.availableTimeRange,
+//       minAdvanceBookingHours: plan.minAdvanceBookingHours,
+//       maxAdvanceBookingHours: plan.maxAdvanceBookingHours
+//     }
+//   })
+
+//   if (!plan.isActive) {
+//     console.log('Plan is not active')
+//     return false
+//   }
+
+//   const dayOfWeek = date.getUTCDay()
+//   console.log('Day of week:', dayOfWeek)
+  
+//   if (plan.availableDays && plan.availableDays.length > 0) {
+//     if (!plan.availableDays.includes(dayOfWeek)) {
+//       console.log('Day not available')
+//       return false
+//     }
+//   }
+
+//   if (plan.availableTimeRange) {
+//     const [planStartTime, planEndTime] = plan.availableTimeRange.split("-")
+//     const [slotStartTime, slotEndTime] = timeSlot.split("-")
+    
+//     console.log('Time comparison:', {
+//       planRange: `${planStartTime} - ${planEndTime}`,
+//       slotRange: `${slotStartTime} - ${slotEndTime}`
+//     })
+    
+//     if (slotStartTime < planStartTime || slotEndTime > planEndTime) {
+//       console.log('Time slot outside available range')
+//       return false
+//     }
+//   }
+
+//   const now = new Date()
+//   const hoursDifference = (date.getTime() - now.getTime()) / (1000 * 60 * 60)
+  
+//   console.log('Hours difference:', hoursDifference)
+
+//   if (plan.minAdvanceBookingHours && hoursDifference < plan.minAdvanceBookingHours) {
+//     console.log('Too soon to book')
+//     return false
+//   }
+
+//   if (plan.maxAdvanceBookingHours && hoursDifference > plan.maxAdvanceBookingHours) {
+//     console.log('Too far in advance')
+//     return false
+//   }
+
+//   console.log('Plan is available')
+//   return true
+// }
+
+async isPlanAvailableForDateTime(planId: string, date: Date, timeSlot: string): Promise<boolean> {
   const plan = await this.getPlanById(planId)
 
+  console.log('Checking plan availability:', {
+    planId,
+    date: date.toISOString(),
+    timeSlot,
+    planDetails: {
+      isActive: plan.isActive,
+      availableDays: plan.availableDays,
+      availableTimeRange: plan.availableTimeRange,
+      minAdvanceBookingHours: plan.minAdvanceBookingHours,
+      maxAdvanceBookingHours: plan.maxAdvanceBookingHours
+    }
+  })
+
   if (!plan.isActive) {
+    console.log('Plan is not active')
     return false
   }
 
-  // Get day of week from UTC date to match the date string format
+  // Get day of week from UTC date
   const dayOfWeek = date.getUTCDay()
+  console.log('Day of week:', dayOfWeek)
   
   // Check if the day is available
   if (plan.availableDays && plan.availableDays.length > 0) {
     if (!plan.availableDays.includes(dayOfWeek)) {
+      console.log('Day not available')
       return false
     }
   }
 
   // Check time range if specified
   if (plan.availableTimeRange) {
-    const [startTime, endTime] = plan.availableTimeRange.split("-")
-    const slotStartTime = timeSlot.split("-")[0] // Get start time from slot
-    const slotEndTime = timeSlot.split("-")[1] // Get end time from slot
+    const [planStartTime, planEndTime] = plan.availableTimeRange.split("-")
+    const [slotStartTime, slotEndTime] = timeSlot.split("-")
+    
+    console.log('Time comparison:', {
+      planRange: `${planStartTime} - ${planEndTime}`,
+      slotRange: `${slotStartTime} - ${slotEndTime}`
+    })
     
     // Check if slot is within available time range
-    if (slotStartTime < startTime || slotEndTime > endTime) {
+    if (slotStartTime < planStartTime || slotEndTime > planEndTime) {
+      console.log('Time slot outside available range')
       return false
     }
   }
 
-  // Check advance booking restrictions
+  // Calculate actual scheduled time for advance booking check
+  const [startTime] = timeSlot.split('-')
+  const [hours, minutes] = startTime.split(':').map(Number)
+  const scheduledDateTime = new Date(date)
+  scheduledDateTime.setUTCHours(hours, minutes, 0, 0)
+  
   const now = new Date()
-  const hoursDifference = (date.getTime() - now.getTime()) / (1000 * 60 * 60)
+  const hoursDifference = (scheduledDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+  
+  console.log('Hours difference (using actual scheduled time):', hoursDifference, {
+    scheduledDateTime: scheduledDateTime.toISOString(),
+    now: now.toISOString()
+  })
 
   if (plan.minAdvanceBookingHours && hoursDifference < plan.minAdvanceBookingHours) {
+    console.log('Too soon to book - minimum advance booking hours not met')
     return false
   }
 
   if (plan.maxAdvanceBookingHours && hoursDifference > plan.maxAdvanceBookingHours) {
+    console.log('Too far in advance - exceeds maximum advance booking hours')
     return false
   }
 
+  console.log('Plan is available')
   return true
 }
 

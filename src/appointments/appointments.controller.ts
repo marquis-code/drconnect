@@ -133,6 +133,11 @@ export class AppointmentsController {
     return this.appointmentsService.getAppointments(req.user!.userId, req.user!.role, queryDto)
   }
 
+  @Get("patient-status")
+async getPatientStatus(@Req() req: Request) {
+  return this.appointmentsService.getPatientStatus(req.user!.userId)
+}
+
   @Get("upcoming")
   async getUpcomingAppointments(@Req() req: Request) {
     return this.appointmentsService.getUserUpcomingAppointments(req.user!.userId)

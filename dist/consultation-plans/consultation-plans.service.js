@@ -153,31 +153,61 @@ let ConsultationPlansService = class ConsultationPlansService {
     }
     async isPlanAvailableForDateTime(planId, date, timeSlot) {
         const plan = await this.getPlanById(planId);
+        console.log('Checking plan availability:', {
+            planId,
+            date: date.toISOString(),
+            timeSlot,
+            planDetails: {
+                isActive: plan.isActive,
+                availableDays: plan.availableDays,
+                availableTimeRange: plan.availableTimeRange,
+                minAdvanceBookingHours: plan.minAdvanceBookingHours,
+                maxAdvanceBookingHours: plan.maxAdvanceBookingHours
+            }
+        });
         if (!plan.isActive) {
+            console.log('Plan is not active');
             return false;
         }
         const dayOfWeek = date.getUTCDay();
+        console.log('Day of week:', dayOfWeek);
         if (plan.availableDays && plan.availableDays.length > 0) {
             if (!plan.availableDays.includes(dayOfWeek)) {
+                console.log('Day not available');
                 return false;
             }
         }
         if (plan.availableTimeRange) {
-            const [startTime, endTime] = plan.availableTimeRange.split("-");
-            const slotStartTime = timeSlot.split("-")[0];
-            const slotEndTime = timeSlot.split("-")[1];
-            if (slotStartTime < startTime || slotEndTime > endTime) {
+            const [planStartTime, planEndTime] = plan.availableTimeRange.split("-");
+            const [slotStartTime, slotEndTime] = timeSlot.split("-");
+            console.log('Time comparison:', {
+                planRange: `${planStartTime} - ${planEndTime}`,
+                slotRange: `${slotStartTime} - ${slotEndTime}`
+            });
+            if (slotStartTime < planStartTime || slotEndTime > planEndTime) {
+                console.log('Time slot outside available range');
                 return false;
             }
         }
+        const [startTime] = timeSlot.split('-');
+        const [hours, minutes] = startTime.split(':').map(Number);
+        const scheduledDateTime = new Date(date);
+        scheduledDateTime.setUTCHours(hours, minutes, 0, 0);
         const now = new Date();
-        const hoursDifference = (date.getTime() - now.getTime()) / (1000 * 60 * 60);
+        const hoursDifference = (scheduledDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+        console.log('Hours difference (using actual scheduled time):', hoursDifference, {
+            scheduledDateTime: scheduledDateTime.toISOString(),
+            now: now.toISOString()
+        });
         if (plan.minAdvanceBookingHours && hoursDifference < plan.minAdvanceBookingHours) {
+            console.log('Too soon to book - minimum advance booking hours not met');
             return false;
         }
         if (plan.maxAdvanceBookingHours && hoursDifference > plan.maxAdvanceBookingHours) {
+            console.log('Too far in advance - exceeds maximum advance booking hours');
             return false;
         }
+        console.log('Plan is available');
         return true;
     }
     async getAvailablePlansForDate(date, consultationType, consultationCategory) {

@@ -35,6 +35,9 @@ let AppointmentsController = class AppointmentsController {
     async getAppointments(queryDto, req) {
         return this.appointmentsService.getAppointments(req.user.userId, req.user.role, queryDto);
     }
+    async getPatientStatus(req) {
+        return this.appointmentsService.getPatientStatus(req.user.userId);
+    }
     async getUpcomingAppointments(req) {
         return this.appointmentsService.getUserUpcomingAppointments(req.user.userId);
     }
@@ -92,6 +95,13 @@ __decorate([
     __metadata("design:paramtypes", [query_appointments_dto_1.QueryAppointmentsDto, Object]),
     __metadata("design:returntype", Promise)
 ], AppointmentsController.prototype, "getAppointments", null);
+__decorate([
+    (0, common_1.Get)("patient-status"),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AppointmentsController.prototype, "getPatientStatus", null);
 __decorate([
     (0, common_1.Get)("upcoming"),
     __param(0, (0, common_1.Req)()),

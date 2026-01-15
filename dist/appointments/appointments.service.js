@@ -29,6 +29,15 @@ let AppointmentsService = class AppointmentsService {
         const { planId, doctorId, consultationType, consultationCategory, consultationMode, date, timeSlot, location, price, duration, patientNotes, chiefComplaint, symptoms, previousAppointmentId } = createAppointmentDto;
         const plan = await this.consultationPlansService.getPlanById(planId);
         const appointmentDate = new Date(date + 'T00:00:00Z');
+        const scheduledStartTime = this.calculateScheduledStartTime(date, timeSlot);
+        console.log('Creating appointment:', {
+            userId,
+            planId,
+            date,
+            timeSlot,
+            appointmentDate: appointmentDate.toISOString(),
+            scheduledStartTime: scheduledStartTime.toISOString()
+        });
         const isAvailable = await this.consultationPlansService.isPlanAvailableForDateTime(planId, appointmentDate, timeSlot);
         if (!isAvailable) {
             throw new common_1.BadRequestException("This consultation plan is not available for the selected date and time");
@@ -57,16 +66,25 @@ let AppointmentsService = class AppointmentsService {
                 status: { $in: [appointment_schema_1.AppointmentStatus.COMPLETED] }
             });
             if (existingAppointments === 0) {
-                throw new common_1.BadRequestException("This plan is only available for existing patients");
+                throw new common_1.BadRequestException({
+                    message: "This plan is only available for existing patients",
+                    hint: "Complete your first appointment to access this plan",
+                    planName: plan.name
+                });
             }
         }
         const now = new Date();
-        const hoursDifference = (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+        const hoursDifference = (scheduledStartTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+        console.log('Advance booking check:', {
+            hoursDifference,
+            minRequired: plan.minAdvanceBookingHours,
+            maxAllowed: plan.maxAdvanceBookingHours
+        });
         if (hoursDifference < plan.minAdvanceBookingHours) {
-            throw new common_1.BadRequestException(`This appointment must be booked at least ${plan.minAdvanceBookingHours} hours in advance`);
+            throw new common_1.BadRequestException(`This appointment must be booked at least ${plan.minAdvanceBookingHours} hours in advance. Current difference: ${hoursDifference.toFixed(2)} hours`);
         }
         if (hoursDifference > plan.maxAdvanceBookingHours) {
-            throw new common_1.BadRequestException(`This appointment cannot be booked more than ${plan.maxAdvanceBookingHours} hours in advance`);
+            throw new common_1.BadRequestException(`This appointment cannot be booked more than ${plan.maxAdvanceBookingHours} hours in advance. Current difference: ${hoursDifference.toFixed(2)} hours`);
         }
         const isSlotAvailable = await this.checkSlotAvailability(date, timeSlot, consultationType, doctorId);
         if (!isSlotAvailable) {
@@ -90,12 +108,13 @@ let AppointmentsService = class AppointmentsService {
             previousAppointmentId: previousAppointmentId ? new mongoose_2.Types.ObjectId(previousAppointmentId) : undefined,
             paymentStatus: appointment_schema_1.PaymentStatus.PENDING,
             status: appointment_schema_1.AppointmentStatus.BOOKED,
-            scheduledStartTime: this.calculateScheduledStartTime(date, timeSlot)
+            scheduledStartTime
         });
         await appointment.save();
         if (previousAppointmentId) {
             await this.appointmentModel.findByIdAndUpdate(previousAppointmentId, { nextAppointmentId: appointment._id });
         }
+        console.log('Appointment created successfully:', appointment._id);
         return appointment;
     }
     calculateScheduledStartTime(date, timeSlot) {
@@ -150,6 +169,17 @@ let AppointmentsService = class AppointmentsService {
             console.error("Failed to generate Google Meet link:", error);
             throw new common_1.BadRequestException("Failed to generate Google Meet link");
         }
+    }
+    async getPatientStatus(userId) {
+        const completedAppointments = await this.appointmentModel.countDocuments({
+            userId: new mongoose_2.Types.ObjectId(userId),
+            status: { $in: [appointment_schema_1.AppointmentStatus.COMPLETED] }
+        });
+        return {
+            isNewPatient: completedAppointments === 0,
+            isExistingPatient: completedAppointments > 0,
+            completedAppointments
+        };
     }
     async getAppointments(userId, role, queryDto) {
         const query = {};

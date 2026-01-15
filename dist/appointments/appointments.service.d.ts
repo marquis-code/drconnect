@@ -20,6 +20,11 @@ export declare class AppointmentsService {
     private calculateScheduledStartTime;
     checkSlotAvailability(date: string, timeSlot: string, consultationType: string, doctorId?: string): Promise<boolean>;
     generateMeetLinkAfterPayment(appointmentId: string): Promise<string>;
+    getPatientStatus(userId: string): Promise<{
+        isNewPatient: boolean;
+        isExistingPatient: boolean;
+        completedAppointments: number;
+    }>;
     getAppointments(userId: string, role: string, queryDto: QueryAppointmentsDto): Promise<(import("mongoose").Document<unknown, {}, Appointment, {}, {}> & Appointment & Required<{
         _id: unknown;
     }> & {
