@@ -27,13 +27,17 @@ let ConsultationPlansController = class ConsultationPlansController {
     async createPlan(createPlanDto) {
         return this.consultationPlansService.createPlan(createPlanDto);
     }
-    async getAllPlans(includeInactive, consultationType, consultationCategory, minPrice, maxPrice) {
+    async getAllPlans(includeInactive, consultationType, consultationCategory, minPriceParam, maxPriceParam) {
+        const minPrice = minPriceParam ? parseFloat(minPriceParam) : undefined;
+        const maxPrice = maxPriceParam ? parseFloat(maxPriceParam) : undefined;
+        const validMinPrice = minPrice !== undefined && !isNaN(minPrice) ? minPrice : undefined;
+        const validMaxPrice = maxPrice !== undefined && !isNaN(maxPrice) ? maxPrice : undefined;
         return this.consultationPlansService.getAllPlans({
             includeInactive: includeInactive || false,
             consultationType,
             consultationCategory,
-            minPrice,
-            maxPrice
+            minPrice: validMinPrice,
+            maxPrice: validMaxPrice
         });
     }
     async getAvailablePlansForDate(date, consultationType, consultationCategory) {
@@ -85,7 +89,7 @@ __decorate([
     __param(3, (0, common_1.Query)("minPrice")),
     __param(4, (0, common_1.Query)("maxPrice")),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Boolean, String, String, Number, Number]),
+    __metadata("design:paramtypes", [Boolean, String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], ConsultationPlansController.prototype, "getAllPlans", null);
 __decorate([

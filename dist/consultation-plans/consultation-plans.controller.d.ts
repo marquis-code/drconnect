@@ -6,7 +6,7 @@ export declare class ConsultationPlansController {
     private consultationPlansService;
     constructor(consultationPlansService: ConsultationPlansService);
     createPlan(createPlanDto: CreateConsultationPlanDto): Promise<import("src/schemas/consultation-plan.schema").ConsultationPlan>;
-    getAllPlans(includeInactive?: boolean, consultationType?: ConsultationType, consultationCategory?: ConsultationCategory, minPrice?: number, maxPrice?: number): Promise<import("src/schemas/consultation-plan.schema").ConsultationPlan[]>;
+    getAllPlans(includeInactive?: boolean, consultationType?: ConsultationType, consultationCategory?: ConsultationCategory, minPriceParam?: string, maxPriceParam?: string): Promise<import("src/schemas/consultation-plan.schema").ConsultationPlan[]>;
     getAvailablePlansForDate(date: string, consultationType?: ConsultationType, consultationCategory?: ConsultationCategory): Promise<import("src/schemas/consultation-plan.schema").ConsultationPlan[]>;
     getPlansByType(consultationType: ConsultationType): Promise<import("src/schemas/consultation-plan.schema").ConsultationPlan[]>;
     getPlansByCategory(consultationCategory: ConsultationCategory): Promise<import("src/schemas/consultation-plan.schema").ConsultationPlan[]>;
