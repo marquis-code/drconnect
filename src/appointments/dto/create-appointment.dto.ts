@@ -41,11 +41,16 @@ import {
   IsArray,
   Min
 } from "class-validator"
+// import { 
+//   ConsultationType, 
+//   ConsultationMode, 
+//   ConsultationCategory 
+// } from "../../schemas/appointment.schema"
 import { 
   ConsultationType, 
   ConsultationMode, 
-  ConsultationCategory 
-} from "../../schemas/appointment.schema"
+  ConsultationCategory,
+} from "src/schemas/shared-enums"
 
 export class CreateAppointmentDto {
   @IsNotEmpty()

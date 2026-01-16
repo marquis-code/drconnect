@@ -1,4 +1,4 @@
-import { AppointmentStatus, ConsultationType, PaymentStatus } from "../../schemas/appointment.schema";
+import { ConsultationType, AppointmentStatus, PaymentStatus } from "src/schemas/shared-enums";
 export declare class QueryAppointmentsDto {
     userId?: string;
     doctorId?: string;

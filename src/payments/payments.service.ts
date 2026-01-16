@@ -311,7 +311,14 @@ import { InjectModel } from "@nestjs/mongoose"
 import { ConfigService } from "@nestjs/config"
 import { type Model, Types } from "mongoose"
 import { Transaction } from "src/schemas/transaction.schema"
-import { Appointment, AppointmentStatus, PaymentStatus } from "src/schemas/appointment.schema"
+import { Appointment } from "src/schemas/appointment.schema"
+import { 
+  ConsultationType, 
+  ConsultationMode, 
+  ConsultationCategory,
+  AppointmentStatus,
+  PaymentStatus 
+} from "src/schemas/shared-enums"
 import { User } from "src/schemas/user.schema"
 import { InitiatePaymentDto } from "./dto/initiate-payment.dto"
 import { PaystackService } from "src/integrations/paystack.service"

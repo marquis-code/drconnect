@@ -1,5 +1,5 @@
 import { CreateAppointmentDto } from "./create-appointment.dto";
-import { AppointmentStatus, PaymentStatus } from "../../schemas/appointment.schema";
+import { AppointmentStatus, PaymentStatus } from "src/schemas/shared-enums";
 declare const UpdateAppointmentDto_base: import("@nestjs/mapped-types").MappedType<Partial<CreateAppointmentDto>>;
 export declare class UpdateAppointmentDto extends UpdateAppointmentDto_base {
     status?: AppointmentStatus;

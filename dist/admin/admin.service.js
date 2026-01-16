@@ -21,6 +21,7 @@ const appointment_schema_1 = require("../schemas/appointment.schema");
 const transaction_schema_1 = require("../schemas/transaction.schema");
 const availability_schema_1 = require("../schemas/availability.schema");
 const settings_schema_1 = require("../schemas/settings.schema");
+const shared_enums_1 = require("../schemas/shared-enums");
 let AdminService = class AdminService {
     constructor(userModel, appointmentModel, transactionModel, availabilityModel, settingsModel) {
         this.userModel = userModel;
@@ -35,10 +36,10 @@ let AdminService = class AdminService {
         const totalDoctors = await this.userModel.countDocuments({ role: user_schema_1.UserRole.DOCTOR });
         const totalAppointments = await this.appointmentModel.countDocuments();
         const completedAppointments = await this.appointmentModel.countDocuments({
-            status: appointment_schema_1.AppointmentStatus.COMPLETED
+            status: shared_enums_1.AppointmentStatus.COMPLETED
         });
         const pendingAppointments = await this.appointmentModel.countDocuments({
-            status: appointment_schema_1.AppointmentStatus.BOOKED
+            status: shared_enums_1.AppointmentStatus.BOOKED
         });
         const totalRevenue = await this.transactionModel.aggregate([
             { $match: { paymentStatus: "successful" } },
@@ -172,8 +173,8 @@ let AdminService = class AdminService {
             isAvailable: true,
         };
         if (consultationCategory) {
-            if (!Object.values(availability_schema_1.ConsultationCategory).includes(consultationCategory)) {
-                throw new common_1.BadRequestException(`Invalid consultation category. Must be one of: ${Object.values(availability_schema_1.ConsultationCategory).join(", ")}`);
+            if (!Object.values(shared_enums_1.ConsultationCategory).includes(consultationCategory)) {
+                throw new common_1.BadRequestException(`Invalid consultation category. Must be one of: ${Object.values(shared_enums_1.ConsultationCategory).join(", ")}`);
             }
             availabilityQuery.consultationCategory = consultationCategory;
         }
@@ -191,7 +192,7 @@ let AdminService = class AdminService {
                 $lte: endOfDay,
             },
             status: {
-                $nin: [appointment_schema_1.AppointmentStatus.CANCELED, appointment_schema_1.AppointmentStatus.NO_SHOW]
+                $nin: [shared_enums_1.AppointmentStatus.CANCELED, shared_enums_1.AppointmentStatus.NO_SHOW]
             },
         };
         if (consultationCategory) {

@@ -13,18 +13,18 @@ exports.UpdateAppointmentDto = void 0;
 const mapped_types_1 = require("@nestjs/mapped-types");
 const create_appointment_dto_1 = require("./create-appointment.dto");
 const class_validator_1 = require("class-validator");
-const appointment_schema_1 = require("../../schemas/appointment.schema");
+const shared_enums_1 = require("../../schemas/shared-enums");
 class UpdateAppointmentDto extends (0, mapped_types_1.PartialType)(create_appointment_dto_1.CreateAppointmentDto) {
 }
 exports.UpdateAppointmentDto = UpdateAppointmentDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(appointment_schema_1.AppointmentStatus),
+    (0, class_validator_1.IsEnum)(shared_enums_1.AppointmentStatus),
     __metadata("design:type", String)
 ], UpdateAppointmentDto.prototype, "status", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(appointment_schema_1.PaymentStatus),
+    (0, class_validator_1.IsEnum)(shared_enums_1.PaymentStatus),
     __metadata("design:type", String)
 ], UpdateAppointmentDto.prototype, "paymentStatus", void 0);
 __decorate([

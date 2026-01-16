@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const appointment_schema_1 = require("../schemas/appointment.schema");
+const shared_enums_1 = require("../schemas/shared-enums");
 const consultation_plans_service_1 = require("../consultation-plans/consultation-plans.service");
 const google_meet_service_1 = require("../integrations/google-meet.service");
 let AppointmentsService = class AppointmentsService {
@@ -54,7 +55,7 @@ let AppointmentsService = class AppointmentsService {
         if (plan.isNewPatientOnly) {
             const existingAppointments = await this.appointmentModel.countDocuments({
                 userId: new mongoose_2.Types.ObjectId(userId),
-                status: { $in: [appointment_schema_1.AppointmentStatus.COMPLETED] }
+                status: { $in: [shared_enums_1.AppointmentStatus.COMPLETED] }
             });
             if (existingAppointments > 0) {
                 throw new common_1.BadRequestException("This plan is only available for new patients");
@@ -63,7 +64,7 @@ let AppointmentsService = class AppointmentsService {
         if (plan.isExistingPatientOnly) {
             const existingAppointments = await this.appointmentModel.countDocuments({
                 userId: new mongoose_2.Types.ObjectId(userId),
-                status: { $in: [appointment_schema_1.AppointmentStatus.COMPLETED] }
+                status: { $in: [shared_enums_1.AppointmentStatus.COMPLETED] }
             });
             if (existingAppointments === 0) {
                 throw new common_1.BadRequestException({
@@ -106,8 +107,8 @@ let AppointmentsService = class AppointmentsService {
             chiefComplaint,
             symptoms,
             previousAppointmentId: previousAppointmentId ? new mongoose_2.Types.ObjectId(previousAppointmentId) : undefined,
-            paymentStatus: appointment_schema_1.PaymentStatus.PENDING,
-            status: appointment_schema_1.AppointmentStatus.BOOKED,
+            paymentStatus: shared_enums_1.PaymentStatus.PENDING,
+            status: shared_enums_1.AppointmentStatus.BOOKED,
             scheduledStartTime
         });
         await appointment.save();
@@ -138,7 +139,7 @@ let AppointmentsService = class AppointmentsService {
             timeSlot,
             consultationType,
             status: {
-                $nin: [appointment_schema_1.AppointmentStatus.CANCELED, appointment_schema_1.AppointmentStatus.NO_SHOW]
+                $nin: [shared_enums_1.AppointmentStatus.CANCELED, shared_enums_1.AppointmentStatus.NO_SHOW]
             },
         };
         if (doctorId) {
@@ -152,7 +153,7 @@ let AppointmentsService = class AppointmentsService {
         if (!appointment) {
             throw new common_1.NotFoundException("Appointment not found");
         }
-        if (appointment.paymentStatus !== appointment_schema_1.PaymentStatus.SUCCESSFUL) {
+        if (appointment.paymentStatus !== shared_enums_1.PaymentStatus.SUCCESSFUL) {
             throw new common_1.BadRequestException("Payment must be successful before generating Meet link");
         }
         if (appointment.consultationCategory !== "virtual") {
@@ -173,7 +174,7 @@ let AppointmentsService = class AppointmentsService {
     async getPatientStatus(userId) {
         const completedAppointments = await this.appointmentModel.countDocuments({
             userId: new mongoose_2.Types.ObjectId(userId),
-            status: { $in: [appointment_schema_1.AppointmentStatus.COMPLETED] }
+            status: { $in: [shared_enums_1.AppointmentStatus.COMPLETED] }
         });
         return {
             isNewPatient: completedAppointments === 0,
@@ -229,7 +230,7 @@ let AppointmentsService = class AppointmentsService {
             userId: new mongoose_2.Types.ObjectId(userId),
             date: { $gte: now },
             status: {
-                $in: [appointment_schema_1.AppointmentStatus.BOOKED, appointment_schema_1.AppointmentStatus.CONFIRMED]
+                $in: [shared_enums_1.AppointmentStatus.BOOKED, shared_enums_1.AppointmentStatus.CONFIRMED]
             }
         })
             .populate("doctorId", "name email specialization")
@@ -243,7 +244,7 @@ let AppointmentsService = class AppointmentsService {
             userId: new mongoose_2.Types.ObjectId(userId),
             $or: [
                 { date: { $lt: now } },
-                { status: { $in: [appointment_schema_1.AppointmentStatus.COMPLETED, appointment_schema_1.AppointmentStatus.CANCELED] } }
+                { status: { $in: [shared_enums_1.AppointmentStatus.COMPLETED, shared_enums_1.AppointmentStatus.CANCELED] } }
             ]
         })
             .populate("doctorId", "name email specialization")
@@ -292,10 +293,10 @@ let AppointmentsService = class AppointmentsService {
         if (!appointment) {
             throw new common_1.NotFoundException("Appointment not found");
         }
-        if (appointment.status === appointment_schema_1.AppointmentStatus.CANCELED) {
+        if (appointment.status === shared_enums_1.AppointmentStatus.CANCELED) {
             throw new common_1.BadRequestException("Appointment is already canceled");
         }
-        if (appointment.status === appointment_schema_1.AppointmentStatus.COMPLETED) {
+        if (appointment.status === shared_enums_1.AppointmentStatus.COMPLETED) {
             throw new common_1.BadRequestException("Cannot cancel a completed appointment");
         }
         if (role === "user" || role === "patient") {
@@ -303,7 +304,7 @@ let AppointmentsService = class AppointmentsService {
                 throw new common_1.ForbiddenException("You can only cancel your own appointments");
             }
         }
-        appointment.status = appointment_schema_1.AppointmentStatus.CANCELED;
+        appointment.status = shared_enums_1.AppointmentStatus.CANCELED;
         appointment.cancellationReason = cancellationReason;
         appointment.canceledBy = canceledBy;
         appointment.canceledAt = new Date();
@@ -317,10 +318,10 @@ let AppointmentsService = class AppointmentsService {
         if (!appointment) {
             throw new common_1.NotFoundException("Appointment not found");
         }
-        if (appointment.status === appointment_schema_1.AppointmentStatus.CANCELED) {
+        if (appointment.status === shared_enums_1.AppointmentStatus.CANCELED) {
             throw new common_1.BadRequestException("Cannot reschedule a canceled appointment");
         }
-        if (appointment.status === appointment_schema_1.AppointmentStatus.COMPLETED) {
+        if (appointment.status === shared_enums_1.AppointmentStatus.COMPLETED) {
             throw new common_1.BadRequestException("Cannot reschedule a completed appointment");
         }
         if (role === "user" || role === "patient") {
@@ -336,7 +337,7 @@ let AppointmentsService = class AppointmentsService {
         appointment.date = newAppointmentDate;
         appointment.timeSlot = newTimeSlot;
         appointment.scheduledStartTime = this.calculateScheduledStartTime(newDate, newTimeSlot);
-        appointment.status = appointment_schema_1.AppointmentStatus.RESCHEDULED;
+        appointment.status = shared_enums_1.AppointmentStatus.RESCHEDULED;
         if (appointment.consultationCategory === "virtual" && appointment.googleMeetLink) {
             try {
                 const meetLink = await this.googleMeetService.generateMeetLink(newDate, newTimeSlot);
@@ -357,7 +358,7 @@ let AppointmentsService = class AppointmentsService {
         if (!appointment.doctorId || appointment.doctorId.toString() !== doctorId) {
             throw new common_1.ForbiddenException("You can only complete your assigned appointments");
         }
-        appointment.status = appointment_schema_1.AppointmentStatus.COMPLETED;
+        appointment.status = shared_enums_1.AppointmentStatus.COMPLETED;
         appointment.doctorNotes = completeDto.doctorNotes;
         appointment.diagnosis = completeDto.diagnosis;
         appointment.prescription = completeDto.prescription;
@@ -388,7 +389,7 @@ let AppointmentsService = class AppointmentsService {
         if (!appointment.doctorId || appointment.doctorId.toString() !== doctorId) {
             throw new common_1.ForbiddenException("You can only start your assigned appointments");
         }
-        appointment.status = appointment_schema_1.AppointmentStatus.IN_PROGRESS;
+        appointment.status = shared_enums_1.AppointmentStatus.IN_PROGRESS;
         appointment.actualStartTime = new Date();
         await appointment.save();
         return appointment;
@@ -398,7 +399,7 @@ let AppointmentsService = class AppointmentsService {
         if (!appointment) {
             throw new common_1.NotFoundException("Appointment not found");
         }
-        appointment.status = appointment_schema_1.AppointmentStatus.CONFIRMED;
+        appointment.status = shared_enums_1.AppointmentStatus.CONFIRMED;
         await appointment.save();
         return appointment;
     }
@@ -407,7 +408,7 @@ let AppointmentsService = class AppointmentsService {
         if (!appointment) {
             throw new common_1.NotFoundException("Appointment not found");
         }
-        if (appointment.status !== appointment_schema_1.AppointmentStatus.COMPLETED) {
+        if (appointment.status !== shared_enums_1.AppointmentStatus.COMPLETED) {
             throw new common_1.BadRequestException("Can only rate completed appointments");
         }
         if (role === "user" || role === "patient") {
@@ -457,9 +458,9 @@ let AppointmentsService = class AppointmentsService {
         }
         const [total, completed, canceled, upcoming] = await Promise.all([
             this.appointmentModel.countDocuments(query),
-            this.appointmentModel.countDocuments(Object.assign(Object.assign({}, query), { status: appointment_schema_1.AppointmentStatus.COMPLETED })),
-            this.appointmentModel.countDocuments(Object.assign(Object.assign({}, query), { status: appointment_schema_1.AppointmentStatus.CANCELED })),
-            this.appointmentModel.countDocuments(Object.assign(Object.assign({}, query), { date: { $gte: new Date() }, status: { $in: [appointment_schema_1.AppointmentStatus.BOOKED, appointment_schema_1.AppointmentStatus.CONFIRMED] } }))
+            this.appointmentModel.countDocuments(Object.assign(Object.assign({}, query), { status: shared_enums_1.AppointmentStatus.COMPLETED })),
+            this.appointmentModel.countDocuments(Object.assign(Object.assign({}, query), { status: shared_enums_1.AppointmentStatus.CANCELED })),
+            this.appointmentModel.countDocuments(Object.assign(Object.assign({}, query), { date: { $gte: new Date() }, status: { $in: [shared_enums_1.AppointmentStatus.BOOKED, shared_enums_1.AppointmentStatus.CONFIRMED] } }))
         ]);
         return {
             total,
@@ -473,7 +474,7 @@ let AppointmentsService = class AppointmentsService {
         const now = new Date();
         return this.appointmentModel.find({
             date: { $gte: now },
-            status: { $in: [appointment_schema_1.AppointmentStatus.BOOKED, appointment_schema_1.AppointmentStatus.CONFIRMED] },
+            status: { $in: [shared_enums_1.AppointmentStatus.BOOKED, shared_enums_1.AppointmentStatus.CONFIRMED] },
         });
     }
 };

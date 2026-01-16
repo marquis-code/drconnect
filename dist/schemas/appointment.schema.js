@@ -9,65 +9,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppointmentSchema = exports.Appointment = exports.ConsultationCategory = exports.ConsultationMode = exports.ConsultationType = exports.PaymentStatus = exports.AppointmentStatus = void 0;
+exports.AppointmentSchema = exports.Appointment = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
-var AppointmentStatus;
-(function (AppointmentStatus) {
-    AppointmentStatus["BOOKED"] = "booked";
-    AppointmentStatus["CONFIRMED"] = "confirmed";
-    AppointmentStatus["IN_PROGRESS"] = "in_progress";
-    AppointmentStatus["COMPLETED"] = "completed";
-    AppointmentStatus["CANCELED"] = "canceled";
-    AppointmentStatus["NO_SHOW"] = "no_show";
-    AppointmentStatus["RESCHEDULED"] = "rescheduled";
-})(AppointmentStatus || (exports.AppointmentStatus = AppointmentStatus = {}));
-var PaymentStatus;
-(function (PaymentStatus) {
-    PaymentStatus["PENDING"] = "pending";
-    PaymentStatus["SUCCESSFUL"] = "successful";
-    PaymentStatus["FAILED"] = "failed";
-    PaymentStatus["REFUNDED"] = "refunded";
-    PaymentStatus["PARTIALLY_REFUNDED"] = "partially_refunded";
-})(PaymentStatus || (exports.PaymentStatus = PaymentStatus = {}));
-var ConsultationType;
-(function (ConsultationType) {
-    ConsultationType["FIRST_CONTACT"] = "first_contact";
-    ConsultationType["FOLLOW_UP"] = "follow_up";
-    ConsultationType["MEDICAL_REVIEW"] = "medical_review";
-    ConsultationType["EMERGENCY"] = "emergency";
-    ConsultationType["ROUTINE_CHECKUP"] = "routine_checkup";
-    ConsultationType["PRESCRIPTION_REFILL"] = "prescription_refill";
-    ConsultationType["LAB_RESULT_REVIEW"] = "lab_result_review";
-    ConsultationType["SECOND_OPINION"] = "second_opinion";
-    ConsultationType["MENTAL_HEALTH"] = "mental_health";
-    ConsultationType["CHRONIC_DISEASE_MANAGEMENT"] = "chronic_disease_management";
-    ConsultationType["PRENATAL_POSTNATAL"] = "prenatal_postnatal";
-    ConsultationType["PEDIATRIC"] = "pediatric";
-    ConsultationType["GERIATRIC"] = "geriatric";
-    ConsultationType["NUTRITION_COUNSELING"] = "nutrition_counseling";
-    ConsultationType["PRE_OPERATIVE"] = "pre_operative";
-    ConsultationType["POST_OPERATIVE"] = "post_operative";
-    ConsultationType["PROCEDURE_CONSULTATION"] = "procedure_consultation";
-    ConsultationType["HEALTH_SCREENING"] = "health_screening";
-    ConsultationType["WELLNESS_CONSULTATION"] = "wellness_consultation";
-    ConsultationType["VACCINATION"] = "vaccination";
-    ConsultationType["SICK_NOTE"] = "sick_note";
-    ConsultationType["REFERRAL"] = "referral";
-})(ConsultationType || (exports.ConsultationType = ConsultationType = {}));
-var ConsultationMode;
-(function (ConsultationMode) {
-    ConsultationMode["VIDEO"] = "video";
-    ConsultationMode["VOICE"] = "voice";
-    ConsultationMode["CHAT"] = "chat";
-    ConsultationMode["IN_PERSON"] = "in_person";
-})(ConsultationMode || (exports.ConsultationMode = ConsultationMode = {}));
-var ConsultationCategory;
-(function (ConsultationCategory) {
-    ConsultationCategory["PHYSICAL"] = "physical";
-    ConsultationCategory["VIRTUAL"] = "virtual";
-    ConsultationCategory["HYBRID"] = "hybrid";
-})(ConsultationCategory || (exports.ConsultationCategory = ConsultationCategory = {}));
+const shared_enums_1 = require("./shared-enums");
 let Appointment = class Appointment extends mongoose_2.Document {
 };
 exports.Appointment = Appointment;
@@ -85,23 +30,23 @@ __decorate([
 ], Appointment.prototype, "planId", void 0);
 __decorate([
     (0, mongoose_1.Prop)({
-        enum: Object.values(ConsultationType),
+        enum: Object.values(shared_enums_1.ConsultationType),
         required: true
     }),
     __metadata("design:type", String)
 ], Appointment.prototype, "consultationType", void 0);
 __decorate([
     (0, mongoose_1.Prop)({
-        enum: Object.values(ConsultationCategory),
+        enum: Object.values(shared_enums_1.ConsultationCategory),
         required: true,
-        default: ConsultationCategory.VIRTUAL
+        default: shared_enums_1.ConsultationCategory.VIRTUAL
     }),
     __metadata("design:type", String)
 ], Appointment.prototype, "consultationCategory", void 0);
 __decorate([
     (0, mongoose_1.Prop)({
-        enum: Object.values(ConsultationMode),
-        default: ConsultationMode.VIDEO
+        enum: Object.values(shared_enums_1.ConsultationMode),
+        default: shared_enums_1.ConsultationMode.VIDEO
     }),
     __metadata("design:type", String)
 ], Appointment.prototype, "consultationMode", void 0);
@@ -127,8 +72,8 @@ __decorate([
 ], Appointment.prototype, "price", void 0);
 __decorate([
     (0, mongoose_1.Prop)({
-        enum: Object.values(PaymentStatus),
-        default: PaymentStatus.PENDING
+        enum: Object.values(shared_enums_1.PaymentStatus),
+        default: shared_enums_1.PaymentStatus.PENDING
     }),
     __metadata("design:type", String)
 ], Appointment.prototype, "paymentStatus", void 0);
@@ -142,8 +87,8 @@ __decorate([
 ], Appointment.prototype, "paymentMethod", void 0);
 __decorate([
     (0, mongoose_1.Prop)({
-        enum: Object.values(AppointmentStatus),
-        default: AppointmentStatus.BOOKED
+        enum: Object.values(shared_enums_1.AppointmentStatus),
+        default: shared_enums_1.AppointmentStatus.BOOKED
     }),
     __metadata("design:type", String)
 ], Appointment.prototype, "status", void 0);

@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateAppointmentDto = void 0;
 const class_validator_1 = require("class-validator");
-const appointment_schema_1 = require("../../schemas/appointment.schema");
+const shared_enums_1 = require("../../schemas/shared-enums");
 class CreateAppointmentDto {
 }
 exports.CreateAppointmentDto = CreateAppointmentDto;
@@ -26,15 +26,15 @@ __decorate([
     __metadata("design:type", String)
 ], CreateAppointmentDto.prototype, "doctorId", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(appointment_schema_1.ConsultationType),
+    (0, class_validator_1.IsEnum)(shared_enums_1.ConsultationType),
     __metadata("design:type", String)
 ], CreateAppointmentDto.prototype, "consultationType", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(appointment_schema_1.ConsultationCategory),
+    (0, class_validator_1.IsEnum)(shared_enums_1.ConsultationCategory),
     __metadata("design:type", String)
 ], CreateAppointmentDto.prototype, "consultationCategory", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(appointment_schema_1.ConsultationMode),
+    (0, class_validator_1.IsEnum)(shared_enums_1.ConsultationMode),
     __metadata("design:type", String)
 ], CreateAppointmentDto.prototype, "consultationMode", void 0);
 __decorate([

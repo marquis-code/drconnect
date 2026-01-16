@@ -87,7 +87,7 @@ import { JwtAuthGuard } from "src/auth/guards/jwt.guard"
 import { RolesGuard } from "src/auth/guards/roles.guard"
 import { Roles } from "src/auth/decorators/roles.decorator"
 import { CurrentUser } from "src/auth/decorators/current-user.decorator"
-import { AppointmentStatus } from "src/schemas/appointment.schema"
+import { AppointmentStatus } from "src/schemas/shared-enums"
 import { ConsultationCategory } from "src/schemas/availability.schema"
 import { UserRole } from "src/schemas/user.schema"
 

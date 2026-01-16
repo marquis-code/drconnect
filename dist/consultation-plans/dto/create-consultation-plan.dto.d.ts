@@ -1,4 +1,4 @@
-import { ConsultationType, ConsultationMode, ConsultationCategory } from "../../schemas/consultation-plan.schema";
+import { ConsultationType, ConsultationMode, ConsultationCategory, MentalHealthSubType } from "src/schemas/shared-enums";
 export declare class CreateConsultationPlanDto {
     name: string;
     description: string;
@@ -19,6 +19,12 @@ export declare class CreateConsultationPlanDto {
     isNewPatientOnly?: boolean;
     isExistingPatientOnly?: boolean;
     specialtyRequired?: string;
+    mentalHealthSubType?: MentalHealthSubType;
+    includesPrescription?: boolean;
+    isPriority?: boolean;
+    isCouplesTherapy?: boolean;
+    isGroupTherapy?: boolean;
+    specialConditions?: string;
 }
 export declare class BatchCreateConsultationPlansDto {
     plans: CreateConsultationPlanDto[];

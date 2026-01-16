@@ -1,5 +1,5 @@
 import { AdminService } from "./admin.service";
-import { AppointmentStatus } from "src/schemas/appointment.schema";
+import { AppointmentStatus } from "src/schemas/shared-enums";
 import { ConsultationCategory } from "src/schemas/availability.schema";
 import { UserRole } from "src/schemas/user.schema";
 export declare class AdminController {
@@ -28,7 +28,7 @@ export declare class AdminController {
     }> & {
         __v: number;
     }>;
-    getAllAppointments(status?: AppointmentStatus): Promise<(import("mongoose").Document<unknown, {}, import("src/schemas/appointment.schema").Appointment, {}, {}> & import("src/schemas/appointment.schema").Appointment & Required<{
+    getAllAppointments(status?: AppointmentStatus): Promise<(import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
         _id: unknown;
     }> & {
         __v: number;
@@ -108,7 +108,7 @@ export declare class AdminController {
     }> & {
         __v: number;
     })[]>;
-    exportAppointments(): Promise<(import("mongoose").FlattenMaps<import("src/schemas/appointment.schema").Appointment> & Required<{
+    exportAppointments(): Promise<(import("mongoose").FlattenMaps<import("../schemas/appointment.schema").Appointment> & Required<{
         _id: import("mongoose").FlattenMaps<unknown>;
     }> & {
         __v: number;

@@ -6,11 +6,16 @@ import {
   IsMongoId,
   IsString
 } from "class-validator"
+// import { 
+//   AppointmentStatus, 
+//   ConsultationType,
+//   PaymentStatus 
+// } from "../../schemas/appointment.schema"
 import { 
-  AppointmentStatus, 
-  ConsultationType,
+  ConsultationType, 
+  AppointmentStatus,
   PaymentStatus 
-} from "../../schemas/appointment.schema"
+} from "src/schemas/shared-enums"
 
 export class QueryAppointmentsDto {
   @IsOptional()

@@ -19,7 +19,7 @@ const create_consultation_plan_dto_1 = require("./dto/create-consultation-plan.d
 const update_consultation_plan_dto_1 = require("./dto/update-consultation-plan.dto");
 const jwt_guard_1 = require("../auth/guards/jwt.guard");
 const admin_guard_1 = require("../auth/guards/admin.guard");
-const consultation_plan_schema_1 = require("../schemas/consultation-plan.schema");
+const shared_enums_1 = require("../schemas/shared-enums");
 let ConsultationPlansController = class ConsultationPlansController {
     constructor(consultationPlansService) {
         this.consultationPlansService = consultationPlansService;

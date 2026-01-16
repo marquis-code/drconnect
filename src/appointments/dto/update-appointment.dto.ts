@@ -11,7 +11,14 @@ import {
   Min,
   Max
 } from "class-validator"
-import { AppointmentStatus, PaymentStatus } from "../../schemas/appointment.schema"
+// import { AppointmentStatus, PaymentStatus } from "../../schemas/appointment.schema"
+import { 
+  ConsultationType, 
+  ConsultationMode, 
+  ConsultationCategory,
+  AppointmentStatus,
+  PaymentStatus 
+} from "src/schemas/shared-enums"
 
 export class UpdateAppointmentDto extends PartialType(CreateAppointmentDto) {
   @IsOptional()

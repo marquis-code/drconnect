@@ -1,4 +1,4 @@
-import { ConsultationType, ConsultationMode, ConsultationCategory } from "../../schemas/appointment.schema";
+import { ConsultationType, ConsultationMode, ConsultationCategory } from "src/schemas/shared-enums";
 export declare class CreateAppointmentDto {
     planId: string;
     doctorId?: string;

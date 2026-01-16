@@ -19,6 +19,7 @@ const config_1 = require("@nestjs/config");
 const mongoose_2 = require("mongoose");
 const transaction_schema_1 = require("../schemas/transaction.schema");
 const appointment_schema_1 = require("../schemas/appointment.schema");
+const shared_enums_1 = require("../schemas/shared-enums");
 const user_schema_1 = require("../schemas/user.schema");
 const paystack_service_1 = require("../integrations/paystack.service");
 const mono_service_1 = require("../integrations/mono.service");
@@ -42,7 +43,7 @@ let PaymentsService = class PaymentsService {
         if (appointment.userId.toString() !== userId) {
             throw new common_1.BadRequestException("Unauthorized to pay for this appointment");
         }
-        if (appointment.paymentStatus === appointment_schema_1.PaymentStatus.SUCCESSFUL) {
+        if (appointment.paymentStatus === shared_enums_1.PaymentStatus.SUCCESSFUL) {
             throw new common_1.BadRequestException("This appointment has already been paid for");
         }
         const transactionRef = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -129,10 +130,10 @@ let PaymentsService = class PaymentsService {
                 transaction.paystackReference = verificationResult.reference;
                 await transaction.save();
                 await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
-                    paymentStatus: appointment_schema_1.PaymentStatus.SUCCESSFUL,
+                    paymentStatus: shared_enums_1.PaymentStatus.SUCCESSFUL,
                     paymentMethod: "Paystack",
                     transactionReference: transactionRef,
-                    status: appointment_schema_1.AppointmentStatus.CONFIRMED,
+                    status: shared_enums_1.AppointmentStatus.CONFIRMED,
                 });
                 let meetLink = null;
                 const appointment = await this.appointmentModel.findById(transaction.appointmentId);
@@ -161,8 +162,8 @@ let PaymentsService = class PaymentsService {
                 transaction.paymentStatus = "failed";
                 await transaction.save();
                 await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
-                    paymentStatus: appointment_schema_1.PaymentStatus.FAILED,
-                    status: appointment_schema_1.AppointmentStatus.CANCELED,
+                    paymentStatus: shared_enums_1.PaymentStatus.FAILED,
+                    status: shared_enums_1.AppointmentStatus.CANCELED,
                 });
                 return {
                     status: "failed",
@@ -178,10 +179,10 @@ let PaymentsService = class PaymentsService {
                 transaction.monoReference = verificationResult.reference;
                 await transaction.save();
                 await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
-                    paymentStatus: appointment_schema_1.PaymentStatus.SUCCESSFUL,
+                    paymentStatus: shared_enums_1.PaymentStatus.SUCCESSFUL,
                     paymentMethod: "Mono",
                     transactionReference: transactionRef,
-                    status: appointment_schema_1.AppointmentStatus.CONFIRMED,
+                    status: shared_enums_1.AppointmentStatus.CONFIRMED,
                 });
                 let meetLink = null;
                 const appointment = await this.appointmentModel.findById(transaction.appointmentId);
@@ -210,8 +211,8 @@ let PaymentsService = class PaymentsService {
                 transaction.paymentStatus = "failed";
                 await transaction.save();
                 await this.appointmentModel.findByIdAndUpdate(transaction.appointmentId, {
-                    paymentStatus: appointment_schema_1.PaymentStatus.FAILED,
-                    status: appointment_schema_1.AppointmentStatus.CANCELED,
+                    paymentStatus: shared_enums_1.PaymentStatus.FAILED,
+                    status: shared_enums_1.AppointmentStatus.CANCELED,
                 });
                 return {
                     status: "failed",

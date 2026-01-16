@@ -1,5 +1,6 @@
 import { Model } from "mongoose";
-import { ConsultationPlan, ConsultationType, ConsultationCategory } from "src/schemas/consultation-plan.schema";
+import { ConsultationPlan } from "src/schemas/consultation-plan.schema";
+import { ConsultationType, ConsultationCategory } from "src/schemas/shared-enums";
 import { CreateConsultationPlanDto } from "./dto/create-consultation-plan.dto";
 import { UpdateConsultationPlanDto } from "./dto/update-consultation-plan.dto";
 interface GetAllPlansOptions {

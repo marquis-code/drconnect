@@ -1,9 +1,10 @@
 import { Model } from "mongoose";
 import { User, UserRole } from "src/schemas/user.schema";
-import { Appointment, AppointmentStatus } from "src/schemas/appointment.schema";
+import { Appointment } from "src/schemas/appointment.schema";
 import { Transaction } from "src/schemas/transaction.schema";
-import { Availability, ConsultationCategory } from "src/schemas/availability.schema";
+import { Availability } from "src/schemas/availability.schema";
 import { Settings } from "src/schemas/settings.schema";
+import { ConsultationCategory, AppointmentStatus } from "src/schemas/shared-enums";
 export declare class AdminService {
     private userModel;
     private appointmentModel;
@@ -69,14 +70,14 @@ export declare class AdminService {
         dayOfWeek: number;
         time: string;
         availability: ({
-            consultationCategory: ConsultationCategory;
+            consultationCategory: import("src/schemas/availability.schema").ConsultationCategory;
             doctorId: import("mongoose").Types.ObjectId;
             isAvailable: boolean;
             reason: string;
             time?: undefined;
             timeSlot?: undefined;
         } | {
-            consultationCategory: ConsultationCategory;
+            consultationCategory: import("src/schemas/availability.schema").ConsultationCategory;
             doctorId: import("mongoose").Types.ObjectId;
             time: string;
             timeSlot: {
@@ -92,7 +93,7 @@ export declare class AdminService {
         availability: {
             _id: unknown;
             dayOfWeek: number;
-            consultationCategory: ConsultationCategory;
+            consultationCategory: import("src/schemas/availability.schema").ConsultationCategory;
             doctorId: import("mongoose").Types.ObjectId;
             isAvailable: boolean;
             allowedConsultationTypes: import("src/schemas/availability.schema").ConsultationType[];

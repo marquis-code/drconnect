@@ -3,7 +3,14 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from "@nestjs/common"
 import { InjectModel } from "@nestjs/mongoose"
 import { Model } from "mongoose"
-import { ConsultationPlan, ConsultationType, ConsultationCategory } from "src/schemas/consultation-plan.schema"
+import { ConsultationPlan } from "src/schemas/consultation-plan.schema"
+import { 
+  ConsultationType, 
+  ConsultationMode, 
+  ConsultationCategory,
+  AppointmentStatus,
+  PaymentStatus 
+} from "src/schemas/shared-enums"
 import { CreateConsultationPlanDto } from "./dto/create-consultation-plan.dto"
 import { UpdateConsultationPlanDto } from "./dto/update-consultation-plan.dto"
 

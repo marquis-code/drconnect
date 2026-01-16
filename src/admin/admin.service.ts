@@ -257,10 +257,17 @@ import { Injectable, BadRequestException } from "@nestjs/common"
 import { InjectModel } from "@nestjs/mongoose"
 import { Model } from "mongoose"
 import { User, UserRole } from "src/schemas/user.schema"
-import { Appointment, AppointmentStatus } from "src/schemas/appointment.schema"
+import { Appointment } from "src/schemas/appointment.schema"
 import { Transaction } from "src/schemas/transaction.schema"
-import { Availability, ConsultationCategory } from "src/schemas/availability.schema"
+import { Availability } from "src/schemas/availability.schema"
 import { Settings } from "src/schemas/settings.schema"
+import { 
+  ConsultationType, 
+  ConsultationMode, 
+  ConsultationCategory,
+  AppointmentStatus,
+  PaymentStatus 
+} from "src/schemas/shared-enums"
 
 @Injectable()
 export class AdminService {
