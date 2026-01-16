@@ -14,7 +14,7 @@ import {
   HttpStatus
 } from "@nestjs/common"
 import { ConsultationPlansService } from "./consultation-plans.service"
-import { CreateConsultationPlanDto } from "./dto/create-consultation-plan.dto"
+import { CreateConsultationPlanDto, BatchCreateConsultationPlansDto } from "./dto/create-consultation-plan.dto"
 import { UpdateConsultationPlanDto } from "./dto/update-consultation-plan.dto"
 import { JwtAuthGuard } from "src/auth/guards/jwt.guard"
 import { AdminGuard } from "src/auth/guards/admin.guard"
@@ -23,6 +23,22 @@ import { ConsultationType, ConsultationCategory } from "src/schemas/consultation
 @Controller("consultation-plans")
 export class ConsultationPlansController {
   constructor(private consultationPlansService: ConsultationPlansService) {}
+
+    // POST /consultation-plans/batch (BEFORE /:id)
+  @Post('batch')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async batchCreatePlans(@Body() batchDto: BatchCreateConsultationPlansDto) {
+    return this.consultationPlansService.batchCreatePlans(batchDto.plans)
+  }
+
+  // POST /consultation-plans/batch/transaction (BEFORE /:id)
+  @Post('batch/transaction')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async batchCreatePlansTransaction(@Body() batchDto: BatchCreateConsultationPlansDto) {
+    return this.consultationPlansService.batchCreatePlansTransaction(batchDto.plans)
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard, AdminGuard)
@@ -55,6 +71,7 @@ export class ConsultationPlansController {
       maxPrice: validMaxPrice
     })
   }
+
 
   @Get("available/:date")
   async getAvailablePlansForDate(

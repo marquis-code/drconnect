@@ -9,8 +9,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateConsultationPlanDto = void 0;
+exports.BatchCreateConsultationPlansDto = exports.CreateConsultationPlanDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 const consultation_plan_schema_1 = require("../../schemas/consultation-plan.schema");
 class CreateConsultationPlanDto {
 }
@@ -112,4 +113,13 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateConsultationPlanDto.prototype, "specialtyRequired", void 0);
+class BatchCreateConsultationPlansDto {
+}
+exports.BatchCreateConsultationPlansDto = BatchCreateConsultationPlansDto;
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => CreateConsultationPlanDto),
+    __metadata("design:type", Array)
+], BatchCreateConsultationPlansDto.prototype, "plans", void 0);
 //# sourceMappingURL=create-consultation-plan.dto.js.map

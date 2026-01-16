@@ -241,6 +241,72 @@ let ConsultationPlansService = class ConsultationPlansService {
             return true;
         });
     }
+    async batchCreatePlans(plans) {
+        const results = {
+            success: [],
+            failed: [],
+            summary: {
+                total: plans.length,
+                successful: 0,
+                failed: 0
+            }
+        };
+        for (const planDto of plans) {
+            try {
+                if (planDto.isNewPatientOnly && planDto.isExistingPatientOnly) {
+                    throw new Error("Plan cannot be for both new and existing patients only");
+                }
+                if (planDto.availableTimeRange) {
+                    this.validateTimeRange(planDto.availableTimeRange);
+                }
+                const existingPlan = await this.consultationPlanModel.findOne({
+                    name: planDto.name
+                });
+                if (existingPlan) {
+                    throw new Error(`A consultation plan with name "${planDto.name}" already exists`);
+                }
+                const plan = new this.consultationPlanModel(planDto);
+                const savedPlan = await plan.save();
+                results.success.push(savedPlan);
+                results.summary.successful++;
+            }
+            catch (error) {
+                results.failed.push({
+                    plan: planDto,
+                    error: error.message || 'Unknown error occurred'
+                });
+                results.summary.failed++;
+            }
+        }
+        return results;
+    }
+    async batchCreatePlansTransaction(plans) {
+        for (const planDto of plans) {
+            if (planDto.isNewPatientOnly && planDto.isExistingPatientOnly) {
+                throw new common_1.BadRequestException(`Plan "${planDto.name}" cannot be for both new and existing patients only`);
+            }
+            if (planDto.availableTimeRange) {
+                this.validateTimeRange(planDto.availableTimeRange);
+            }
+        }
+        const nameChecks = await Promise.all(plans.map(async (planDto) => {
+            const existingPlan = await this.consultationPlanModel.findOne({
+                name: planDto.name
+            });
+            return { name: planDto.name, exists: !!existingPlan };
+        }));
+        const existingNames = nameChecks.filter(check => check.exists).map(check => check.name);
+        if (existingNames.length > 0) {
+            throw new common_1.ConflictException(`Consultation plans already exist with names: ${existingNames.join(', ')}`);
+        }
+        const names = plans.map(p => p.name);
+        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
+        if (duplicates.length > 0) {
+            throw new common_1.BadRequestException(`Duplicate names found in batch: ${duplicates.join(', ')}`);
+        }
+        const createdPlans = await this.consultationPlanModel.insertMany(plans);
+        return createdPlans;
+    }
     validateTimeRange(timeRange) {
         const timeRangeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
         if (!timeRangeRegex.test(timeRange)) {

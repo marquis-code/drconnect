@@ -9,8 +9,10 @@ import {
   IsBoolean, 
   IsString, 
   Min,
-  Max
+  Max,
+  ValidateNested,
 } from "class-validator"
+import { Type } from 'class-transformer'
 import { 
   ConsultationType, 
   ConsultationMode, 
@@ -95,4 +97,11 @@ export class CreateConsultationPlanDto {
   @IsOptional()
   @IsString()
   specialtyRequired?: string
+}
+
+export class BatchCreateConsultationPlansDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateConsultationPlanDto)
+  plans: CreateConsultationPlanDto[]
 }

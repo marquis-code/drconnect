@@ -1,10 +1,23 @@
 import { ConsultationPlansService } from "./consultation-plans.service";
-import { CreateConsultationPlanDto } from "./dto/create-consultation-plan.dto";
+import { CreateConsultationPlanDto, BatchCreateConsultationPlansDto } from "./dto/create-consultation-plan.dto";
 import { UpdateConsultationPlanDto } from "./dto/update-consultation-plan.dto";
 import { ConsultationType, ConsultationCategory } from "src/schemas/consultation-plan.schema";
 export declare class ConsultationPlansController {
     private consultationPlansService;
     constructor(consultationPlansService: ConsultationPlansService);
+    batchCreatePlans(batchDto: BatchCreateConsultationPlansDto): Promise<{
+        success: import("src/schemas/consultation-plan.schema").ConsultationPlan[];
+        failed: Array<{
+            plan: CreateConsultationPlanDto;
+            error: string;
+        }>;
+        summary: {
+            total: number;
+            successful: number;
+            failed: number;
+        };
+    }>;
+    batchCreatePlansTransaction(batchDto: BatchCreateConsultationPlansDto): Promise<import("src/schemas/consultation-plan.schema").ConsultationPlan[]>;
     createPlan(createPlanDto: CreateConsultationPlanDto): Promise<import("src/schemas/consultation-plan.schema").ConsultationPlan>;
     getAllPlans(includeInactive?: boolean, consultationType?: ConsultationType, consultationCategory?: ConsultationCategory, minPriceParam?: string, maxPriceParam?: string): Promise<import("src/schemas/consultation-plan.schema").ConsultationPlan[]>;
     getAvailablePlansForDate(date: string, consultationType?: ConsultationType, consultationCategory?: ConsultationCategory): Promise<import("src/schemas/consultation-plan.schema").ConsultationPlan[]>;

@@ -520,6 +520,155 @@ async isPlanAvailableForDateTime(planId: string, date: Date, timeSlot: string): 
   })
 }
 
+
+// Add this to consultation-plans.service.ts
+
+async batchCreatePlans(plans: CreateConsultationPlanDto[]): Promise<{
+  success: ConsultationPlan[]
+  failed: Array<{ plan: CreateConsultationPlanDto; error: string }>
+  summary: {
+    total: number
+    successful: number
+    failed: number
+  }
+}> {
+  const results = {
+    success: [] as ConsultationPlan[],
+    failed: [] as Array<{ plan: CreateConsultationPlanDto; error: string }>,
+    summary: {
+      total: plans.length,
+      successful: 0,
+      failed: 0
+    }
+  }
+
+  // Process each plan
+  for (const planDto of plans) {
+    try {
+      // Validate business rules
+      if (planDto.isNewPatientOnly && planDto.isExistingPatientOnly) {
+        throw new Error("Plan cannot be for both new and existing patients only")
+      }
+
+      // Validate time range format if provided
+      if (planDto.availableTimeRange) {
+        this.validateTimeRange(planDto.availableTimeRange)
+      }
+
+      // Check for duplicate plan names
+      const existingPlan = await this.consultationPlanModel.findOne({ 
+        name: planDto.name 
+      })
+      
+      if (existingPlan) {
+        throw new Error(`A consultation plan with name "${planDto.name}" already exists`)
+      }
+
+      // Create the plan
+      const plan = new this.consultationPlanModel(planDto)
+      const savedPlan = await plan.save()
+      
+      results.success.push(savedPlan)
+      results.summary.successful++
+    } catch (error) {
+      results.failed.push({
+        plan: planDto,
+        error: error.message || 'Unknown error occurred'
+      })
+      results.summary.failed++
+    }
+  }
+
+  return results
+}
+
+// Alternative: Batch create with transaction (all or nothing approach)
+// async batchCreatePlansTransaction(plans: CreateConsultationPlanDto[]): Promise<ConsultationPlan[]> {
+//   // Validate all plans first
+//   for (const planDto of plans) {
+//     if (planDto.isNewPatientOnly && planDto.isExistingPatientOnly) {
+//       throw new BadRequestException(
+//         `Plan "${planDto.name}" cannot be for both new and existing patients only`
+//       )
+//     }
+
+//     if (planDto.availableTimeRange) {
+//       this.validateTimeRange(planDto.availableTimeRange)
+//     }
+
+//     // Check for duplicate names
+//     const existingPlan = await this.consultationPlanModel.findOne({ 
+//       name: planDto.name 
+//     })
+    
+//     if (existingPlan) {
+//       throw new ConflictException(
+//         `A consultation plan with name "${planDto.name}" already exists`
+//       )
+//     }
+//   }
+
+//   // Check for duplicates within the batch
+//   const names = plans.map(p => p.name)
+//   const duplicates = names.filter((name, index) => names.indexOf(name) !== index)
+  
+//   if (duplicates.length > 0) {
+//     throw new BadRequestException(
+//       `Duplicate names found in batch: ${duplicates.join(', ')}`
+//     )
+//   }
+
+//   // If all validations pass, create all plans
+//   const createdPlans = await this.consultationPlanModel.insertMany(plans)
+//   return createdPlans
+// }
+
+async batchCreatePlansTransaction(plans: CreateConsultationPlanDto[]): Promise<ConsultationPlan[]> {
+  // Validate all plans first
+  for (const planDto of plans) {
+    if (planDto.isNewPatientOnly && planDto.isExistingPatientOnly) {
+      throw new BadRequestException(
+        `Plan "${planDto.name}" cannot be for both new and existing patients only`
+      )
+    }
+
+    if (planDto.availableTimeRange) {
+      this.validateTimeRange(planDto.availableTimeRange)
+    }
+  }
+
+  // Check for duplicate names in database (parallel)
+  const nameChecks = await Promise.all(
+    plans.map(async (planDto) => {
+      const existingPlan = await this.consultationPlanModel.findOne({ 
+        name: planDto.name 
+      })
+      return { name: planDto.name, exists: !!existingPlan }
+    })
+  )
+
+  const existingNames = nameChecks.filter(check => check.exists).map(check => check.name)
+  if (existingNames.length > 0) {
+    throw new ConflictException(
+      `Consultation plans already exist with names: ${existingNames.join(', ')}`
+    )
+  }
+
+  // Check for duplicates within the batch
+  const names = plans.map(p => p.name)
+  const duplicates = names.filter((name, index) => names.indexOf(name) !== index)
+  
+  if (duplicates.length > 0) {
+    throw new BadRequestException(
+      `Duplicate names found in batch: ${duplicates.join(', ')}`
+    )
+  }
+
+  // If all validations pass, create all plans
+  const createdPlans = await this.consultationPlanModel.insertMany(plans)
+  return createdPlans as unknown as ConsultationPlan[]
+}
+
   // Validate time range format (HH:MM-HH:MM)
   private validateTimeRange(timeRange: string): void {
     const timeRangeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/

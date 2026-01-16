@@ -24,6 +24,12 @@ let ConsultationPlansController = class ConsultationPlansController {
     constructor(consultationPlansService) {
         this.consultationPlansService = consultationPlansService;
     }
+    async batchCreatePlans(batchDto) {
+        return this.consultationPlansService.batchCreatePlans(batchDto.plans);
+    }
+    async batchCreatePlansTransaction(batchDto) {
+        return this.consultationPlansService.batchCreatePlansTransaction(batchDto.plans);
+    }
     async createPlan(createPlanDto) {
         return this.consultationPlansService.createPlan(createPlanDto);
     }
@@ -72,6 +78,24 @@ let ConsultationPlansController = class ConsultationPlansController {
     }
 };
 exports.ConsultationPlansController = ConsultationPlansController;
+__decorate([
+    (0, common_1.Post)('batch'),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [create_consultation_plan_dto_1.BatchCreateConsultationPlansDto]),
+    __metadata("design:returntype", Promise)
+], ConsultationPlansController.prototype, "batchCreatePlans", null);
+__decorate([
+    (0, common_1.Post)('batch/transaction'),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [create_consultation_plan_dto_1.BatchCreateConsultationPlansDto]),
+    __metadata("design:returntype", Promise)
+], ConsultationPlansController.prototype, "batchCreatePlansTransaction", null);
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),

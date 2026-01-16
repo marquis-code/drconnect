@@ -20,3 +20,6 @@ export declare class CreateConsultationPlanDto {
     isExistingPatientOnly?: boolean;
     specialtyRequired?: string;
 }
+export declare class BatchCreateConsultationPlansDto {
+    plans: CreateConsultationPlanDto[];
+}

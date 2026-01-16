@@ -28,6 +28,19 @@ export declare class ConsultationPlansService {
     }[]): Promise<void>;
     isPlanAvailableForDateTime(planId: string, date: Date, timeSlot: string): Promise<boolean>;
     getAvailablePlansForDate(date: Date, consultationType?: ConsultationType, consultationCategory?: ConsultationCategory): Promise<ConsultationPlan[]>;
+    batchCreatePlans(plans: CreateConsultationPlanDto[]): Promise<{
+        success: ConsultationPlan[];
+        failed: Array<{
+            plan: CreateConsultationPlanDto;
+            error: string;
+        }>;
+        summary: {
+            total: number;
+            successful: number;
+            failed: number;
+        };
+    }>;
+    batchCreatePlansTransaction(plans: CreateConsultationPlanDto[]): Promise<ConsultationPlan[]>;
     private validateTimeRange;
     isPatientEligibleForPlan(planId: string, isNewPatient: boolean): Promise<boolean>;
 }
