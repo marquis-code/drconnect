@@ -1588,6 +1588,7 @@ export class AppointmentsService {
       .populate("doctorId", "name email specialization")
       .populate("planId", "name consultationType duration price")
       .sort({ date: -1, scheduledStartTime: -1 })
+      .lean()
 
     return appointments
   }
@@ -1632,6 +1633,7 @@ export class AppointmentsService {
       .populate("planId")
       .populate("previousAppointmentId")
       .populate("nextAppointmentId")
+      .lean() as any;
 
     if (!appointment) {
       throw new NotFoundException("Appointment not found")

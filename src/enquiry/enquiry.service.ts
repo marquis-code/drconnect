@@ -63,6 +63,7 @@ export class EnquiryService {
         // .sort(sort)
         .skip(skip)
         .limit(limit)
+        .lean()
         .exec(),
       this.enquiryModel.countDocuments(query),
     ]);
@@ -78,8 +79,8 @@ export class EnquiryService {
     };
   }
 
-  async findOne(id: string): Promise<Enquiry> {
-    const enquiry = await this.enquiryModel.findById(id).exec();
+  async findOne(id: string): Promise<Enquiry | null> {
+    const enquiry = await this.enquiryModel.findById(id).lean().exec() as any;
     if (!enquiry) {
       throw new NotFoundException(`Enquiry with ID ${id} not found`);
     }
@@ -135,6 +136,7 @@ export class EnquiryService {
       .find()
       .sort({ createdAt: -1 })
       .limit(5)
+      .lean()
       .exec();
 
     return {

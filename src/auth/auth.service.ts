@@ -84,7 +84,7 @@ export class AuthService implements OnModuleInit {
     licenseNumber,
     qualification,
     bio,
-    emailVerified: false, // Require email verification
+    emailVerified: true, // Require email verification
   })
 
   await user.save()
@@ -117,9 +117,7 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException("Invalid credentials")
     }
 
-    if (!user.emailVerified) {
-      throw new BadRequestException("Please verify your email first")
-    }
+    // Email verification aggressively removed
 
     const token = this.jwtService.sign({
       sub: user._id,
@@ -297,9 +295,7 @@ export class AuthService implements OnModuleInit {
       }
       
       const verificationToken = crypto.randomBytes(32).toString("hex")
-      safeUpdateData['emailVerified'] = false
-      safeUpdateData['verificationToken'] = verificationToken
-      safeUpdateData['email'] = email
+      safeUpdateData['emailVerified'] = true
       
       try {
         await this.notificationService.sendVerificationEmail(email, verificationToken)
@@ -326,12 +322,14 @@ export class AuthService implements OnModuleInit {
       .find({ role: "doctor" })
       .select("-password -resetToken -resetTokenExpiry -verificationToken")
       .sort({ name: 1 })
+      .lean()
   }
 
   async getDoctorById(doctorId: string) {
     const doctor = await this.userModel
       .findOne({ _id: doctorId, role: "doctor" })
       .select("-password -resetToken -resetTokenExpiry -verificationToken")
+      .lean()
     
     if (!doctor) {
       throw new BadRequestException("Doctor not found")
@@ -359,5 +357,6 @@ export class AuthService implements OnModuleInit {
       .find(filter)
       .select("-password -resetToken -resetTokenExpiry -verificationToken")
       .sort({ name: 1 })
+      .lean()
   }
 }

@@ -88,7 +88,8 @@ export class ConsultationPlansService {
     return this.consultationPlanModel
       .find(query)
       .sort({ sortOrder: 1, createdAt: 1 })
-      .exec()
+      .lean()
+      .exec() as any
   }
 
   async getPlanById(planId: string): Promise<ConsultationPlan> {
@@ -103,14 +104,16 @@ export class ConsultationPlansService {
     return this.consultationPlanModel
       .find({ consultationType, isActive: true })
       .sort({ sortOrder: 1, price: 1 })
-      .exec()
+      .lean()
+      .exec() as any
   }
 
   async getPlansByCategory(consultationCategory: ConsultationCategory): Promise<ConsultationPlan[]> {
     return this.consultationPlanModel
       .find({ consultationCategory, isActive: true })
       .sort({ sortOrder: 1, price: 1 })
-      .exec()
+      .lean()
+      .exec() as any
   }
 
   async getPlansForNewPatients(): Promise<ConsultationPlan[]> {
@@ -123,7 +126,8 @@ export class ConsultationPlansService {
         ]
       })
       .sort({ sortOrder: 1 })
-      .exec()
+      .lean()
+      .exec() as any
   }
 
   async getPlansForExistingPatients(): Promise<ConsultationPlan[]> {
@@ -136,7 +140,8 @@ export class ConsultationPlansService {
         ]
       })
       .sort({ sortOrder: 1 })
-      .exec()
+      .lean()
+      .exec() as any
   }
 
   async updatePlan(planId: string, updatePlanDto: UpdateConsultationPlanDto): Promise<ConsultationPlan> {
@@ -508,7 +513,8 @@ async isPlanAvailableForDateTime(planId: string, date: Date, timeSlot: string): 
   const plans = await this.consultationPlanModel
     .find(query)
     .sort({ sortOrder: 1 })
-    .exec()
+    .lean()
+    .exec() as any
 
   // Further filter based on advance booking restrictions
   const now = new Date()
