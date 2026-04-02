@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
 import { Document } from "mongoose"
 import * as bcrypt from "bcryptjs"
-import { isValidPhoneNumber } from "libphonenumber-js"
 
 export enum UserRole {
   USER = "user",
@@ -30,15 +29,7 @@ export class User extends Document {
   @Prop({ required: true, unique: true })
   email: string
 
-  @Prop({
-    required: true,
-    validate: {
-      validator: function (value: string) {
-        return isValidPhoneNumber(value)
-      },
-      message: "Phone number must be a valid phone number"
-    }
-  })
+  @Prop({ required: true })
   phone: string
 
   @Prop({ type: String, default: null })
