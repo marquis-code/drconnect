@@ -59,14 +59,14 @@ const buildUpdate = (plan: CreateConsultationPlanDto) => {
     "sortOrder",
   ]
 
-  const update: Partial<CreateConsultationPlanDto> = {}
+  const update: any = {}
   for (const field of fields) {
     const value = plan[field]
     if (value !== undefined) {
       update[field] = value
     }
   }
-  return update
+  return update as Partial<CreateConsultationPlanDto>
 }
 
 async function syncPlans() {
@@ -99,7 +99,7 @@ async function syncPlans() {
       if (!target) {
         const keyMatches = byKey.get(expectedKey)
         if (keyMatches && keyMatches.length > 0) {
-          target = keyMatches.find((plan) => !matchedIds.has(plan._id.toString()))
+          target = keyMatches.find((plan) => !matchedIds.has(plan._id.toString())) as any
         }
       }
 

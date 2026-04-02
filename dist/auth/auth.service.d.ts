@@ -1,3 +1,4 @@
+import { OnModuleInit } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Model } from "mongoose";
 import { User, UserRole } from "../schemas/user.schema";
@@ -7,11 +8,12 @@ import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { NotificationService } from "../notifications/notification.service";
-export declare class AuthService {
+export declare class AuthService implements OnModuleInit {
     private userModel;
     private jwtService;
     private notificationService;
     constructor(userModel: Model<User>, jwtService: JwtService, notificationService: NotificationService);
+    onModuleInit(): Promise<void>;
     register(registerDto: RegisterDto): Promise<{
         message: string;
         userId: import("mongoose").Types.ObjectId;

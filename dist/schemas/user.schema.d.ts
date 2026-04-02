@@ -33,7 +33,7 @@ export declare class User extends Document {
     gender: Gender | null;
     languages: string[];
     specialization: string | null;
-    licenseNumber: string | null;
+    licenseNumber?: string | null;
     qualification: string | null;
     yearsOfExperience: number | null;
     hospitalAffiliation: string | null;

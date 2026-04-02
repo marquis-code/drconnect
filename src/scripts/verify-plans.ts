@@ -70,7 +70,7 @@ async function verifyPlans() {
   const app = await NestFactory.createApplicationContext(AppModule)
   try {
     const model = app.get<Model<ConsultationPlan>>(getModelToken(ConsultationPlan.name))
-    const dbPlans = await model.find().lean().exec()
+    const dbPlans = await model.find().lean().exec() as any[]
 
     const expectedByName = new Map(
       expectedPlans.map((plan) => [plan.name, plan])
@@ -79,7 +79,7 @@ async function verifyPlans() {
     const dbByName = new Map<string, ConsultationPlan[]>()
     for (const plan of dbPlans) {
       const list = dbByName.get(plan.name) ?? []
-      list.push(plan as ConsultationPlan)
+      list.push(plan)
       dbByName.set(plan.name, list)
     }
 
@@ -97,7 +97,7 @@ async function verifyPlans() {
     for (const plan of dbPlans) {
       const key = normalizeKey(plan)
       const list = keyGroups.get(key) ?? []
-      list.push(plan as ConsultationPlan)
+      list.push(plan)
       keyGroups.set(key, list)
     }
 

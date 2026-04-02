@@ -158,7 +158,7 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "specialization", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: String, default: null, unique: true, sparse: true }),
+    (0, mongoose_1.Prop)({ type: String, unique: true, sparse: true }),
     __metadata("design:type", String)
 ], User.prototype, "licenseNumber", void 0);
 __decorate([
@@ -269,24 +269,28 @@ exports.User = User = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], User);
 exports.UserSchema = mongoose_1.SchemaFactory.createForClass(User);
-exports.UserSchema.pre("save", async function (next) {
+exports.UserSchema.pre("save", async function () {
     if (!this.isModified("password") || !this.password) {
-        return next();
+        return;
     }
     try {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
-        next();
     }
     catch (error) {
-        next(error);
+        throw error;
     }
 });
-exports.UserSchema.pre("save", function (next) {
+exports.UserSchema.pre("save", async function () {
     if (this.role !== UserRole.DOCTOR && !this.isVerified) {
         this.isVerified = true;
     }
-    next();
+    if (this.licenseNumber === null || this.licenseNumber === "") {
+        this.licenseNumber = undefined;
+    }
+    if (this.googleId === null || this.googleId === "") {
+        this.googleId = undefined;
+    }
 });
 exports.UserSchema.methods.comparePassword = async function (password) {
     if (!this.password) {

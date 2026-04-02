@@ -70,6 +70,16 @@ let AuthService = class AuthService {
         this.jwtService = jwtService;
         this.notificationService = notificationService;
     }
+    async onModuleInit() {
+        try {
+            await this.userModel.updateMany({ $or: [{ licenseNumber: null }, { licenseNumber: "" }] }, { $unset: { licenseNumber: 1 } });
+            await this.userModel.updateMany({ $or: [{ googleId: null }, { googleId: "" }] }, { $unset: { googleId: 1 } });
+            console.log("✅ Successfully cleaned up null and empty values for sparse unique indexes");
+        }
+        catch (error) {
+            console.error("❌ Failed to clean up null values for sparse unique indexes:", error);
+        }
+    }
     async register(registerDto) {
         const { email, password, name, phone, role, specialization, licenseNumber, qualification, bio } = registerDto;
         const existingUser = await this.userModel.findOne({ email });

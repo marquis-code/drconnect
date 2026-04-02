@@ -194,22 +194,21 @@ export class User extends Document {
 export const UserSchema = SchemaFactory.createForClass(User)
 
 // Pre-save hook to hash password
-UserSchema.pre("save", async function (next) {
+UserSchema.pre("save", async function () {
   if (!this.isModified("password") || !this.password) {
-    return next()
+    return
   }
 
   try {
     const salt = await bcrypt.genSalt(10)
     this.password = await bcrypt.hash(this.password, salt)
-    next()
   } catch (error) {
-    next(error as Error)
+    throw error
   }
 })
 
 // Pre-save hook to update verification status and handle sparse unique fields
-UserSchema.pre("save", function (next) {
+UserSchema.pre("save", async function () {
   // Auto-set isVerified for non-doctor roles
   if (this.role !== UserRole.DOCTOR && !this.isVerified) {
     this.isVerified = true
@@ -224,8 +223,6 @@ UserSchema.pre("save", function (next) {
   if (this.googleId === null || this.googleId === "") {
     this.googleId = undefined
   }
-
-  next()
 })
 
 // Compare password method
