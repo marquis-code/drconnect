@@ -30,6 +30,7 @@ __decorate([
 ], Appointment.prototype, "planId", void 0);
 __decorate([
     (0, mongoose_1.Prop)({
+        type: String,
         enum: Object.values(shared_enums_1.ConsultationType),
         required: true
     }),
@@ -37,6 +38,7 @@ __decorate([
 ], Appointment.prototype, "consultationType", void 0);
 __decorate([
     (0, mongoose_1.Prop)({
+        type: String,
         enum: Object.values(shared_enums_1.ConsultationCategory),
         required: true,
         default: shared_enums_1.ConsultationCategory.VIRTUAL
@@ -45,6 +47,7 @@ __decorate([
 ], Appointment.prototype, "consultationCategory", void 0);
 __decorate([
     (0, mongoose_1.Prop)({
+        type: String,
         enum: Object.values(shared_enums_1.ConsultationMode),
         default: shared_enums_1.ConsultationMode.VIDEO
     }),
@@ -72,6 +75,7 @@ __decorate([
 ], Appointment.prototype, "price", void 0);
 __decorate([
     (0, mongoose_1.Prop)({
+        type: String,
         enum: Object.values(shared_enums_1.PaymentStatus),
         default: shared_enums_1.PaymentStatus.PENDING
     }),
@@ -87,6 +91,7 @@ __decorate([
 ], Appointment.prototype, "paymentMethod", void 0);
 __decorate([
     (0, mongoose_1.Prop)({
+        type: String,
         enum: Object.values(shared_enums_1.AppointmentStatus),
         default: shared_enums_1.AppointmentStatus.BOOKED
     }),

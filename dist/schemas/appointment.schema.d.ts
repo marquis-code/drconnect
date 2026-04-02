@@ -48,11 +48,11 @@ export declare class Appointment extends Document {
     updatedAt?: Date;
 }
 export declare const AppointmentSchema: import("mongoose").Schema<Appointment, import("mongoose").Model<Appointment, any, any, any, Document<unknown, any, Appointment, any, {}> & Appointment & Required<{
-    _id: unknown;
+    _id: Types.ObjectId;
 }> & {
     __v: number;
 }, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Appointment, Document<unknown, {}, import("mongoose").FlatRecord<Appointment>, {}, import("mongoose").ResolveSchemaOptions<import("mongoose").DefaultSchemaOptions>> & import("mongoose").FlatRecord<Appointment> & Required<{
-    _id: unknown;
+    _id: Types.ObjectId;
 }> & {
     __v: number;
 }>;

@@ -7,7 +7,7 @@ export declare class EnquiryService {
     create(createEnquiryDto: CreateEnquiryDto): Promise<Enquiry>;
     findAll(queryDto: QueryEnquiryDto): Promise<{
         data: (import("mongoose").Document<unknown, {}, Enquiry, {}, {}> & Enquiry & Required<{
-            _id: unknown;
+            _id: import("mongoose").Types.ObjectId;
         }> & {
             __v: number;
         })[];
@@ -26,7 +26,7 @@ export declare class EnquiryService {
         byStatus: any;
         byPriority: any;
         recentEnquiries: (import("mongoose").Document<unknown, {}, Enquiry, {}, {}> & Enquiry & Required<{
-            _id: unknown;
+            _id: import("mongoose").Types.ObjectId;
         }> & {
             __v: number;
         })[];

@@ -98,8 +98,8 @@ export class User extends Document {
   @Prop({ type: String, default: null })
   specialization: string | null
 
-  @Prop({ type: String, default: null, unique: true, sparse: true })
-  licenseNumber: string | null
+  @Prop({ type: String, unique: true, sparse: true })
+  licenseNumber?: string | null
 
   @Prop({ type: String, default: null })
   qualification: string | null
@@ -208,12 +208,23 @@ UserSchema.pre("save", async function (next) {
   }
 })
 
-// Pre-save hook to update verification status
+// Pre-save hook to update verification status and handle sparse unique fields
 UserSchema.pre("save", function (next) {
   // Auto-set isVerified for non-doctor roles
   if (this.role !== UserRole.DOCTOR && !this.isVerified) {
     this.isVerified = true
   }
+
+  // Handle licenseNumber and googleId for sparse unique index
+  // If it's null or empty string, set it to undefined so it's omitted from the doc
+  if (this.licenseNumber === null || this.licenseNumber === "") {
+    this.licenseNumber = undefined
+  }
+
+  if (this.googleId === null || this.googleId === "") {
+    this.googleId = undefined
+  }
+
   next()
 })
 
@@ -241,10 +252,8 @@ UserSchema.virtual("age").get(function () {
 })
 
 // Indexes for performance
-UserSchema.index({ email: 1 })
 UserSchema.index({ role: 1, isActive: 1 })
 UserSchema.index({ specialization: 1 }, { sparse: true })
-UserSchema.index({ licenseNumber: 1 }, { sparse: true })
 UserSchema.index({ averageRating: -1 }, { sparse: true })
 UserSchema.index({ name: "text", specialization: "text", bio: "text" })
 

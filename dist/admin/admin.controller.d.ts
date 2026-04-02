@@ -14,37 +14,37 @@ export declare class AdminController {
         totalRevenue: any;
     }>;
     getAllUsers(role?: UserRole): Promise<(import("mongoose").Document<unknown, {}, import("src/schemas/user.schema").User, {}, {}> & import("src/schemas/user.schema").User & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
     getAllDoctors(): Promise<(import("mongoose").Document<unknown, {}, import("src/schemas/user.schema").User, {}, {}> & import("src/schemas/user.schema").User & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
     verifyDoctor(doctorId: string, user: any): Promise<import("mongoose").Document<unknown, {}, import("src/schemas/user.schema").User, {}, {}> & import("src/schemas/user.schema").User & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     getAllAppointments(status?: AppointmentStatus): Promise<(import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
     getAllTransactions(): Promise<(import("mongoose").Document<unknown, {}, import("../schemas/transaction.schema").Transaction, {}, {}> & import("../schemas/transaction.schema").Transaction & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
     setAvailability(availabilityData: any): Promise<import("mongoose").Document<unknown, {}, import("src/schemas/availability.schema").Availability, {}, {}> & import("src/schemas/availability.schema").Availability & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     getAvailability(doctorId?: string): Promise<(import("mongoose").Document<unknown, {}, import("src/schemas/availability.schema").Availability, {}, {}> & import("src/schemas/availability.schema").Availability & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
@@ -74,7 +74,7 @@ export declare class AdminController {
         date: string;
         dayOfWeek: number;
         availability: {
-            _id: unknown;
+            _id: import("mongoose").Types.ObjectId;
             dayOfWeek: number;
             consultationCategory: ConsultationCategory;
             doctorId: import("mongoose").Types.ObjectId;
@@ -94,22 +94,22 @@ export declare class AdminController {
         time?: undefined;
     }>;
     updateSettings(settingsData: any): Promise<import("mongoose").Document<unknown, {}, import("../schemas/settings.schema").Settings, {}, {}> & import("../schemas/settings.schema").Settings & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     getSettings(): Promise<import("mongoose").Document<unknown, {}, import("../schemas/settings.schema").Settings, {}, {}> & import("../schemas/settings.schema").Settings & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     exportTransactions(): Promise<(import("mongoose").FlattenMaps<import("../schemas/transaction.schema").Transaction> & Required<{
-        _id: import("mongoose").FlattenMaps<unknown>;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
     exportAppointments(): Promise<(import("mongoose").FlattenMaps<import("../schemas/appointment.schema").Appointment> & Required<{
-        _id: import("mongoose").FlattenMaps<unknown>;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;

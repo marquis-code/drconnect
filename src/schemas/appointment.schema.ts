@@ -250,12 +250,14 @@ export class Appointment extends Document {
   planId: Types.ObjectId
 
   @Prop({ 
+    type: String,
     enum: Object.values(ConsultationType), 
     required: true 
   })
   consultationType: ConsultationType
 
   @Prop({ 
+    type: String,
     enum: Object.values(ConsultationCategory), 
     required: true,
     default: ConsultationCategory.VIRTUAL
@@ -263,6 +265,7 @@ export class Appointment extends Document {
   consultationCategory: ConsultationCategory
 
   @Prop({ 
+    type: String,
     enum: Object.values(ConsultationMode), 
     default: ConsultationMode.VIDEO 
   })
@@ -284,6 +287,7 @@ export class Appointment extends Document {
   price: number
 
   @Prop({ 
+    type: String,
     enum: Object.values(PaymentStatus), 
     default: PaymentStatus.PENDING 
   })
@@ -296,6 +300,7 @@ export class Appointment extends Document {
   paymentMethod: string // e.g., "card", "bank_transfer", "wallet"
 
   @Prop({ 
+    type: String,
     enum: Object.values(AppointmentStatus), 
     default: AppointmentStatus.BOOKED 
   })

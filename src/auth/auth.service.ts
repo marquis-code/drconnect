@@ -1,194 +1,9 @@
-// import { Injectable, BadRequestException, UnauthorizedException, ConflictException } from "@nestjs/common"
-// import { InjectModel } from "@nestjs/mongoose"
-// import { JwtService } from "@nestjs/jwt"
-// import { Model } from "mongoose"
-// import { User } from "src/schemas/user.schema"
-// import { RegisterDto } from "./dto/register.dto"
-// import { LoginDto } from "./dto/login.dto"
-// import { ForgotPasswordDto } from "./dto/forgot-password.dto"
-// import { ResetPasswordDto } from "./dto/reset-password.dto"
-// import { NotificationService } from "../notifications/notification.service"
-// import * as crypto from "crypto"
-
-// @Injectable()
-// export class AuthService {
-//   constructor(
-//     @InjectModel(User.name) private userModel: Model<User>,
-//     private jwtService: JwtService,
-//     private notificationService: NotificationService,
-//   ) {}
-
-//   async register(registerDto: RegisterDto) {
-//   const { email, password, name, phone, role } = registerDto
-
-//   const existingUser = await this.userModel.findOne({ email })
-//   if (existingUser) {
-//     throw new ConflictException("Email already registered")
-//   }
-
-//   const verificationToken = crypto.randomBytes(32).toString("hex")
-
-//   const user = new this.userModel({
-//     name,
-//     email,
-//     phone,
-//     password,
-//     verificationToken,
-//     authProvider: "email",
-//     role: role ?? "user", // ✅ set default role if not provided
-//   })
-
-//   await user.save()
-
-//   // Send verification email
-//   // await this.notificationService.sendVerificationEmail(email, verificationToken)
-
-//   return {
-//     message: "Registration successful. Please verify your email.",
-//     userId: user._id,
-//   }
-// }
-
-
-//   async login(loginDto: LoginDto) {
-//     const { email, password } = loginDto
-
-//     const user = await this.userModel.findOne({ email })
-//     if (!user) {
-//       throw new UnauthorizedException("Invalid credentials")
-//     }
-
-//     const isPasswordValid = await user.comparePassword(password)
-//     if (!isPasswordValid) {
-//       throw new UnauthorizedException("Invalid credentials")
-//     }
-
-//     if (!user.emailVerified) {
-//       throw new BadRequestException("Please verify your email first")
-//     }
-
-//     const token = this.jwtService.sign({
-//       sub: user._id,
-//       email: user.email,
-//       role: user.role,
-//     })
-
-//     return {
-//       access_token: token,
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         role: user.role,
-//       },
-//     }
-//   }
-
-//   async googleLogin(profile: any) {
-//     let user = await this.userModel.findOne({ googleId: profile.googleId })
-
-//     if (!user) {
-//       user = new this.userModel({
-//         name: `${profile.firstName} ${profile.lastName}`,
-//         email: profile.email,
-//         phone: "",
-//         googleId: profile.googleId,
-//         authProvider: "google",
-//         emailVerified: true,
-//         profilePicture: profile.picture,
-//       })
-//       await user.save()
-//     }
-
-//     const token = this.jwtService.sign({
-//       sub: user._id,
-//       email: user.email,
-//       role: user.role,
-//     })
-
-//     return {
-//       access_token: token,
-//       user: {
-//         id: user._id,
-//         name: user.name,
-//         email: user.email,
-//         role: user.role,
-//       },
-//     }
-//   }
-
-//   async verifyEmail(token: string) {
-//     const user = await this.userModel.findOne({ verificationToken: token })
-
-//     if (!user) {
-//       throw new BadRequestException("Invalid verification token")
-//     }
-
-//     user.emailVerified = true
-//     user.verificationToken = null
-//     await user.save()
-
-//     return { message: "Email verified successfully" }
-//   }
-
-//   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
-//     const { email } = forgotPasswordDto
-
-//     const user = await this.userModel.findOne({ email })
-//     if (!user) {
-//       throw new BadRequestException("User not found")
-//     }
-
-//     const resetToken = crypto.randomBytes(32).toString("hex")
-//     user.resetToken = resetToken
-//     user.resetTokenExpiry = new Date(Date.now() + 3600000) // 1 hour
-//     await user.save()
-
-//     await this.notificationService.sendPasswordResetEmail(email, resetToken)
-
-//     return { message: "Password reset email sent" }
-//   }
-
-//   async resetPassword(resetPasswordDto: ResetPasswordDto) {
-//     const { token, newPassword } = resetPasswordDto
-
-//     const user = await this.userModel.findOne({
-//       resetToken: token,
-//       resetTokenExpiry: { $gt: new Date() },
-//     })
-
-//     if (!user) {
-//       throw new BadRequestException("Invalid or expired reset token")
-//     }
-
-//     user.password = newPassword
-//     user.resetToken = null
-//     user.resetTokenExpiry = null
-//     await user.save()
-
-//     return { message: "Password reset successfully" }
-//   }
-
-//   async getProfile(userId: string) {
-//     const user = await this.userModel.findById(userId).select("-password -resetToken")
-//     if (!user) {
-//       throw new BadRequestException("User not found")
-//     }
-//     return user
-//   }
-
-//   async updateProfile(userId: string, updateData: any) {
-//     const user = await this.userModel.findByIdAndUpdate(userId, updateData, { new: true })
-//     return user
-//   }
-// }
-
-// src/auth/auth.service.ts
 import { 
   Injectable, 
   BadRequestException, 
   UnauthorizedException, 
-  ConflictException 
+  ConflictException,
+  OnModuleInit
 } from "@nestjs/common"
 import { InjectModel } from "@nestjs/mongoose"
 import { JwtService } from "@nestjs/jwt"
@@ -203,73 +18,30 @@ import { NotificationService } from "../notifications/notification.service"
 import * as crypto from "crypto"
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private jwtService: JwtService,
     private notificationService: NotificationService,
   ) {}
 
-  // async register(registerDto: RegisterDto) {
-  //   const { 
-  //     email, 
-  //     password, 
-  //     name, 
-  //     phone, 
-  //     role,
-  //     specialization,
-  //     licenseNumber,
-  //     qualification,
-  //     bio
-  //   } = registerDto
-
-  //   const existingUser = await this.userModel.findOne({ email })
-  //   if (existingUser) {
-  //     throw new ConflictException("Email already registered")
-  //   }
-
-  //   // For doctor registration, validate required fields
-  //   if (role === "doctor") {
-  //     if (!specialization || !licenseNumber) {
-  //       throw new BadRequestException(
-  //         "Specialization and license number are required for doctor registration"
-  //       )
-  //     }
-  //   }
-
-  //   const verificationToken = crypto.randomBytes(32).toString("hex")
-
-  //   const user = new this.userModel({
-  //     name,
-  //     email,
-  //     phone,
-  //     password,
-  //     verificationToken,
-  //     authProvider: "email",
-  //     role: role ?? "patient", // Default to patient instead of user
-  //     specialization,
-  //     licenseNumber,
-  //     qualification,
-  //     bio,
-  //     emailVerified: false, // Require email verification
-  //   })
-
-  //   await user.save()
-
-  //   // Send verification email
-  //   try {
-  //     await this.notificationService.sendVerificationEmail(email, verificationToken)
-  //   } catch (error) {
-  //     console.error("Failed to send verification email:", error)
-  //     // Don't fail registration if email fails
-  //   }
-
-  //   return {
-  //     message: "Registration successful. Please verify your email.",
-  //     userId: user._id,
-  //     role: user.role,
-  //   }
-  // }
+  async onModuleInit() {
+    // 🚀 Aggressive Cleanup: Remove null and empty string values for sparse unique indexed fields
+    // This allows the sparse unique index to function correctly by omitting documents where the field is missing.
+    try {
+      await this.userModel.updateMany(
+        { $or: [{ licenseNumber: null }, { licenseNumber: "" }] },
+        { $unset: { licenseNumber: 1 } }
+      )
+      await this.userModel.updateMany(
+        { $or: [{ googleId: null }, { googleId: "" }] },
+        { $unset: { googleId: 1 } }
+      )
+      console.log("✅ Successfully cleaned up null and empty values for sparse unique indexes")
+    } catch (error) {
+      console.error("❌ Failed to clean up null values for sparse unique indexes:", error)
+    }
+  }
 
   async register(registerDto: RegisterDto) {
   const { 
@@ -416,55 +188,6 @@ export class AuthService {
     },
   }
 }
-
-  // async googleLogin(profile: any) {
-  //   let user = await this.userModel.findOne({ googleId: profile.googleId })
-
-  //   if (!user) {
-  //     // Check if email already exists
-  //     user = await this.userModel.findOne({ email: profile.email })
-      
-  //     if (user) {
-  //       // Link Google account to existing user
-  //       user.googleId = profile.googleId
-  //       user.authProvider = "google"
-  //       user.profilePicture = profile.picture
-  //       user.emailVerified = true
-  //     } else {
-  //       // Create new user
-  //       user = new this.userModel({
-  //         name: `${profile.firstName} ${profile.lastName}`,
-  //         email: profile.email,
-  //         phone: "",
-  //         googleId: profile.googleId,
-  //         authProvider: "google",
-  //         emailVerified: true,
-  //         profilePicture: profile.picture,
-  //         role: "patient", // Default role for Google sign-up
-  //       })
-  //     }
-      
-  //     await user.save()
-  //   }
-
-  //   const token = this.jwtService.sign({
-  //     sub: user._id,
-  //     email: user.email,
-  //     role: user.role,
-  //   })
-
-  //   return {
-  //     access_token: token,
-  //     user: {
-  //       id: user._id,
-  //       name: user.name,
-  //       email: user.email,
-  //       role: user.role,
-  //       specialization: user.specialization,
-  //       profilePicture: user.profilePicture,
-  //     },
-  //   }
-  // }
 
   async verifyEmail(token: string) {
     const user = await this.userModel.findOne({ verificationToken: token })

@@ -11,12 +11,12 @@ export declare class AppointmentsController {
     private appointmentsService;
     constructor(appointmentsService: AppointmentsService);
     createAppointment(createAppointmentDto: CreateAppointmentDto, req: Request): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     getAppointments(queryDto: QueryAppointmentsDto, req: Request): Promise<(import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
@@ -26,12 +26,12 @@ export declare class AppointmentsController {
         completedAppointments: number;
     }>;
     getUpcomingAppointments(req: Request): Promise<(import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
     getPastAppointments(req: Request): Promise<(import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
@@ -43,47 +43,47 @@ export declare class AppointmentsController {
         completionRate: string | number;
     }>;
     getAppointmentById(id: string, req: Request): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     updateAppointment(id: string, updateDto: UpdateAppointmentDto, req: Request): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     cancelAppointment(id: string, cancelDto: CancelAppointmentDto, req: Request): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     rescheduleAppointment(id: string, rescheduleDto: RescheduleAppointmentDto, req: Request): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     completeAppointment(id: string, completeDto: CompleteAppointmentDto, req: Request): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     checkInAppointment(id: string, req: Request): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     rateAppointment(id: string, rateDto: RateAppointmentDto, req: Request): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     confirmAppointment(id: string): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     startAppointment(id: string, req: Request): Promise<import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;

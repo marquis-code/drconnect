@@ -26,11 +26,11 @@ export declare class Enquiry extends Document {
     userAgent?: string;
 }
 export declare const EnquirySchema: import("mongoose").Schema<Enquiry, import("mongoose").Model<Enquiry, any, any, any, Document<unknown, any, Enquiry, any, {}> & Enquiry & Required<{
-    _id: unknown;
+    _id: import("mongoose").Types.ObjectId;
 }> & {
     __v: number;
 }, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Enquiry, Document<unknown, {}, import("mongoose").FlatRecord<Enquiry>, {}, import("mongoose").ResolveSchemaOptions<import("mongoose").DefaultSchemaOptions>> & import("mongoose").FlatRecord<Enquiry> & Required<{
-    _id: unknown;
+    _id: import("mongoose").Types.ObjectId;
 }> & {
     __v: number;
 }>;

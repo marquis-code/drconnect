@@ -306,10 +306,8 @@ exports.UserSchema.virtual("age").get(function () {
     }
     return age;
 });
-exports.UserSchema.index({ email: 1 });
 exports.UserSchema.index({ role: 1, isActive: 1 });
 exports.UserSchema.index({ specialization: 1 }, { sparse: true });
-exports.UserSchema.index({ licenseNumber: 1 }, { sparse: true });
 exports.UserSchema.index({ averageRating: -1 }, { sparse: true });
 exports.UserSchema.index({ name: "text", specialization: "text", bio: "text" });
 exports.UserSchema.set("toJSON", { virtuals: true });

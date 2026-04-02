@@ -29,7 +29,7 @@ export declare class PublicController {
         date: string;
         dayOfWeek: number;
         availability: {
-            _id: unknown;
+            _id: import("mongoose").Types.ObjectId;
             dayOfWeek: number;
             consultationCategory: ConsultationCategory;
             doctorId: import("mongoose").Types.ObjectId;
@@ -49,7 +49,7 @@ export declare class PublicController {
         time?: undefined;
     }>;
     getSettings(): Promise<import("mongoose").Document<unknown, {}, import("../schemas/settings.schema").Settings, {}, {}> & import("../schemas/settings.schema").Settings & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;

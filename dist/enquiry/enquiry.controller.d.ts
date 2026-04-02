@@ -7,7 +7,7 @@ export declare class EnquiryController {
     create(createEnquiryDto: CreateEnquiryDto, req: any): Promise<import("../schemas/enquiry.schema").Enquiry>;
     findAll(queryDto: QueryEnquiryDto): Promise<{
         data: (import("mongoose").Document<unknown, {}, import("../schemas/enquiry.schema").Enquiry, {}, {}> & import("../schemas/enquiry.schema").Enquiry & Required<{
-            _id: unknown;
+            _id: import("mongoose").Types.ObjectId;
         }> & {
             __v: number;
         })[];
@@ -23,7 +23,7 @@ export declare class EnquiryController {
         byStatus: any;
         byPriority: any;
         recentEnquiries: (import("mongoose").Document<unknown, {}, import("../schemas/enquiry.schema").Enquiry, {}, {}> & import("../schemas/enquiry.schema").Enquiry & Required<{
-            _id: unknown;
+            _id: import("mongoose").Types.ObjectId;
         }> & {
             __v: number;
         })[];

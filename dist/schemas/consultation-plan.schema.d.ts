@@ -30,11 +30,11 @@ export declare class ConsultationPlan extends Document {
     updatedAt?: Date;
 }
 export declare const ConsultationPlanSchema: import("mongoose").Schema<ConsultationPlan, import("mongoose").Model<ConsultationPlan, any, any, any, Document<unknown, any, ConsultationPlan, any, {}> & ConsultationPlan & Required<{
-    _id: unknown;
+    _id: import("mongoose").Types.ObjectId;
 }> & {
     __v: number;
 }, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, ConsultationPlan, Document<unknown, {}, import("mongoose").FlatRecord<ConsultationPlan>, {}, import("mongoose").ResolveSchemaOptions<import("mongoose").DefaultSchemaOptions>> & import("mongoose").FlatRecord<ConsultationPlan> & Required<{
-    _id: unknown;
+    _id: import("mongoose").Types.ObjectId;
 }> & {
     __v: number;
 }>;

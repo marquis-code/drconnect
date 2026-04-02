@@ -14,12 +14,12 @@ export declare class PaymentsController {
         status: string;
         message: string;
         appointment: import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-            _id: unknown;
+            _id: import("mongoose").Types.ObjectId;
         }> & {
             __v: number;
         };
         transaction: import("mongoose").Document<unknown, {}, import("../schemas/transaction.schema").Transaction, {}, {}> & import("../schemas/transaction.schema").Transaction & Required<{
-            _id: unknown;
+            _id: import("mongoose").Types.ObjectId;
         }> & {
             __v: number;
         };
@@ -29,12 +29,12 @@ export declare class PaymentsController {
         status: string;
         message: string;
         appointment: import("mongoose").Document<unknown, {}, import("../schemas/appointment.schema").Appointment, {}, {}> & import("../schemas/appointment.schema").Appointment & Required<{
-            _id: unknown;
+            _id: import("mongoose").Types.ObjectId;
         }> & {
             __v: number;
         };
         transaction: import("mongoose").Document<unknown, {}, import("../schemas/transaction.schema").Transaction, {}, {}> & import("../schemas/transaction.schema").Transaction & Required<{
-            _id: unknown;
+            _id: import("mongoose").Types.ObjectId;
         }> & {
             __v: number;
         };
@@ -44,7 +44,7 @@ export declare class PaymentsController {
         status: string;
         message: any;
         transaction: import("mongoose").Document<unknown, {}, import("../schemas/transaction.schema").Transaction, {}, {}> & import("../schemas/transaction.schema").Transaction & Required<{
-            _id: unknown;
+            _id: import("mongoose").Types.ObjectId;
         }> & {
             __v: number;
         };
@@ -53,12 +53,12 @@ export declare class PaymentsController {
         meetLink?: undefined;
     }>;
     getTransactionHistory(user: any): Promise<(import("mongoose").Document<unknown, {}, import("../schemas/transaction.schema").Transaction, {}, {}> & import("../schemas/transaction.schema").Transaction & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
     getAllTransactions(): Promise<(import("mongoose").Document<unknown, {}, import("../schemas/transaction.schema").Transaction, {}, {}> & import("../schemas/transaction.schema").Transaction & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
@@ -67,7 +67,7 @@ export declare class PaymentsController {
         data: any;
     }>;
     getTransactionById(id: string): Promise<import("mongoose").Document<unknown, {}, import("../schemas/transaction.schema").Transaction, {}, {}> & import("../schemas/transaction.schema").Transaction & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;

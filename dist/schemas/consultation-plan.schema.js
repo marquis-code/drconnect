@@ -26,6 +26,7 @@ __decorate([
 ], ConsultationPlan.prototype, "description", void 0);
 __decorate([
     (0, mongoose_1.Prop)({
+        type: String,
         enum: Object.values(shared_enums_1.ConsultationType),
         required: true,
         index: true
@@ -34,6 +35,7 @@ __decorate([
 ], ConsultationPlan.prototype, "consultationType", void 0);
 __decorate([
     (0, mongoose_1.Prop)({
+        type: String,
         enum: Object.values(shared_enums_1.ConsultationCategory),
         required: true,
         default: shared_enums_1.ConsultationCategory.VIRTUAL
@@ -137,9 +139,7 @@ exports.ConsultationPlan = ConsultationPlan = __decorate([
 ], ConsultationPlan);
 exports.ConsultationPlanSchema = mongoose_1.SchemaFactory.createForClass(ConsultationPlan);
 exports.ConsultationPlanSchema.index({ consultationType: 1, isActive: 1 });
-exports.ConsultationPlanSchema.index({ sortOrder: 1 });
 exports.ConsultationPlanSchema.index({ price: 1 });
-exports.ConsultationPlanSchema.index({ name: 1 }, { unique: true });
 exports.ConsultationPlanSchema.index({
     consultationType: 1,
     consultationCategory: 1,

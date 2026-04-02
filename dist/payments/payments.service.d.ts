@@ -1,5 +1,5 @@
 import { ConfigService } from "@nestjs/config";
-import { type Model } from "mongoose";
+import { type Model, Types } from "mongoose";
 import { Transaction } from "src/schemas/transaction.schema";
 import { Appointment } from "src/schemas/appointment.schema";
 import { User } from "src/schemas/user.schema";
@@ -21,12 +21,12 @@ export declare class PaymentsService {
         status: string;
         message: string;
         appointment: import("mongoose").Document<unknown, {}, Appointment, {}, {}> & Appointment & Required<{
-            _id: unknown;
+            _id: Types.ObjectId;
         }> & {
             __v: number;
         };
         transaction: import("mongoose").Document<unknown, {}, Transaction, {}, {}> & Transaction & Required<{
-            _id: unknown;
+            _id: Types.ObjectId;
         }> & {
             __v: number;
         };
@@ -36,12 +36,12 @@ export declare class PaymentsService {
         status: string;
         message: string;
         appointment: import("mongoose").Document<unknown, {}, Appointment, {}, {}> & Appointment & Required<{
-            _id: unknown;
+            _id: Types.ObjectId;
         }> & {
             __v: number;
         };
         transaction: import("mongoose").Document<unknown, {}, Transaction, {}, {}> & Transaction & Required<{
-            _id: unknown;
+            _id: Types.ObjectId;
         }> & {
             __v: number;
         };
@@ -51,7 +51,7 @@ export declare class PaymentsService {
         status: string;
         message: any;
         transaction: import("mongoose").Document<unknown, {}, Transaction, {}, {}> & Transaction & Required<{
-            _id: unknown;
+            _id: Types.ObjectId;
         }> & {
             __v: number;
         };
@@ -60,17 +60,17 @@ export declare class PaymentsService {
         meetLink?: undefined;
     }>;
     getTransactionHistory(userId: string): Promise<(import("mongoose").Document<unknown, {}, Transaction, {}, {}> & Transaction & Required<{
-        _id: unknown;
+        _id: Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
     getAllTransactions(): Promise<(import("mongoose").Document<unknown, {}, Transaction, {}, {}> & Transaction & Required<{
-        _id: unknown;
+        _id: Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
     getTransactionById(transactionId: string): Promise<import("mongoose").Document<unknown, {}, Transaction, {}, {}> & Transaction & Required<{
-        _id: unknown;
+        _id: Types.ObjectId;
     }> & {
         __v: number;
     }>;

@@ -14,13 +14,13 @@ export declare class AuthService {
     constructor(userModel: Model<User>, jwtService: JwtService, notificationService: NotificationService);
     register(registerDto: RegisterDto): Promise<{
         message: string;
-        userId: unknown;
+        userId: import("mongoose").Types.ObjectId;
         role: UserRole;
     }>;
     login(loginDto: LoginDto): Promise<{
         access_token: string;
         user: {
-            id: unknown;
+            id: import("mongoose").Types.ObjectId;
             name: string;
             email: string;
             role: UserRole;
@@ -31,7 +31,7 @@ export declare class AuthService {
     googleLogin(profile: any): Promise<{
         access_token: string;
         user: {
-            id: unknown;
+            id: import("mongoose").Types.ObjectId;
             name: string;
             email: string;
             role: UserRole;
@@ -41,7 +41,7 @@ export declare class AuthService {
     }>;
     verifyEmail(token: string): Promise<{
         message: string;
-        userId: unknown;
+        userId: import("mongoose").Types.ObjectId;
     }>;
     resendVerificationEmail(email: string): Promise<{
         message: string;
@@ -53,27 +53,27 @@ export declare class AuthService {
         message: string;
     }>;
     getProfile(userId: string): Promise<import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     updateProfile(userId: string, updateData: UpdateProfileDto): Promise<import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     getAllDoctors(): Promise<(import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
     getDoctorById(doctorId: string): Promise<import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     }>;
     searchDoctors(query: string, specialization?: string): Promise<(import("mongoose").Document<unknown, {}, User, {}, {}> & User & Required<{
-        _id: unknown;
+        _id: import("mongoose").Types.ObjectId;
     }> & {
         __v: number;
     })[]>;
